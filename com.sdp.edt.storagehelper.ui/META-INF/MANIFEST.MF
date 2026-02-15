@@ -10,7 +10,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.resources;bundle-version="3.20.0",
  org.eclipse.jgit;bundle-version="6.8.11",
  org.eclipse.egit.core;bundle-version="6.8.11",
- com._1c.g5.v8.dt.common.git;bundle-version="4.3.300"
+ com._1c.g5.v8.dt.common.git;bundle-version="4.3.300",
+ org.eclipse.ui.console;bundle-version="3.13.100"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Automatic-Module-Name: com.sdp.edt.storagehelper.ui
 Bundle-ActivationPolicy: lazy

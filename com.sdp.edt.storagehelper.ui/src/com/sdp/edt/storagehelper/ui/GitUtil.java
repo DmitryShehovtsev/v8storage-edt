@@ -139,7 +139,7 @@ public class GitUtil
         }
     }
 
-    private static IProject getActiveProject(IWorkbenchWindow window)
+    public static IProject getActiveProject(IWorkbenchWindow window)
     {
         if (window == null)
         {
