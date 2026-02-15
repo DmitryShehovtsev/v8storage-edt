@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: V8 Storage Plugin
+Bundle-SymbolicName: com.sdp.edt.v8storage.ui;singleton:=true
+Bundle-Version: 0.0.1.qualifier
+Bundle-Activator: com.sdp.edt.v8storage.ui.Activator
+Bundle-Vendor: SDP
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources;bundle-version="3.20.0",
+ org.eclipse.jgit;bundle-version="6.8.11",
+ org.eclipse.egit.core;bundle-version="6.8.11",
+ com._1c.g5.v8.dt.common.git;bundle-version="4.3.300",
+ org.eclipse.ui.console;bundle-version="3.13.100"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Automatic-Module-Name: com.sdp.edt.v8storage.ui
+Bundle-ActivationPolicy: lazy
