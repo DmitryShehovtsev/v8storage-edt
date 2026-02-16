@@ -32,9 +32,10 @@ public class PushAction
             return null;
         }
         IPath projectLocation = activeProject.getLocation();
-        String scriptPath = projectLocation.append("edt-helper-test") //$NON-NLS-1$
-            .append("main.os") //$NON-NLS-1$
-            .toOSString();
+        String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
+//        String scriptPath2 = projectLocation.append("edt-helper-test") //$NON-NLS-1$
+//            .append("main.os") //$NON-NLS-1$
+//            .toOSString();
 
         String projectDir = projectLocation.toOSString();
 

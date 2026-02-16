@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.sdp.edt.v8storage.ui.V8StoragePreferencePage"
+            id="com.sdp.edt.v8storage.ui.preferencePage"
+            name="Интеграция с хранилищем конфигурации (V8 Storage)">
+      </page>
+   </extension>
    <extension point="org.eclipse.ui.commands">
       <command
             id="com.sdp.edt.v8storage.ui.pullCommand"

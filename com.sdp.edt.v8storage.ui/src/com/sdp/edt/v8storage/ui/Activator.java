@@ -10,10 +10,7 @@ public class Activator extends AbstractUIPlugin {
 
     public static final String PLUGIN_ID = "com.sdp.edt.v8storage.ui"; //$NON-NLS-1$
 
-    public static final String PREF_TEST_FILE_PATH = "testFilePath"; //$NON-NLS-1$
     public static final String PREF_SCRIPT_PATH = "scriptPath"; //$NON-NLS-1$
-    public static final String PREF_DESCRIBE_FILE_PATH = "describeFilePath"; //$NON-NLS-1$
-    public static final String PREF_DEFAULT_DESCRIPTION = "defaultDescription"; //$NON-NLS-1$
 
     private static Activator plugin;
 
@@ -24,7 +21,7 @@ public class Activator extends AbstractUIPlugin {
         plugin = this;
 
         IPreferenceStore store = new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID);
-        store.setDefault(PREF_DEFAULT_DESCRIPTION, "Описание не предоставлено"); //$NON-NLS-1$
+        store.setDefault(PREF_SCRIPT_PATH, ""); //$NON-NLS-1$
     }
 
     @Override
