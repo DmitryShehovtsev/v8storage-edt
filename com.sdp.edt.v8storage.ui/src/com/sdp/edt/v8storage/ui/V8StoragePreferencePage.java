@@ -21,7 +21,7 @@ public class V8StoragePreferencePage
     public void createFieldEditors()
     {
         StringFieldEditor scriptEditor =
-            new StringFieldEditor(Activator.PREF_SCRIPT_PATH, "Исполняемый файл:", getFieldEditorParent()); //$NON-NLS-1$
+            new StringFieldEditor(Activator.PREF_SCRIPT_PATH, "Путь к исполняемому файлу:", getFieldEditorParent()); //$NON-NLS-1$
         scriptEditor.setEmptyStringAllowed(true);
         addField(scriptEditor);
     }

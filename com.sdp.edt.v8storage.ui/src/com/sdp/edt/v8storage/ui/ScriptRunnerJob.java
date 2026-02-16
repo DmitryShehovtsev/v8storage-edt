@@ -23,20 +23,22 @@ public class ScriptRunnerJob
     extends Job
 {
 
-    private static final String CONSOLE_NAME = "Script Output"; //$NON-NLS-1$
+    private static final String CONSOLE_NAME = "V8Storage Output"; //$NON-NLS-1$
 
     private final String scriptPath;
+    private final String projectDir;
+    private final String command;
     private final String hash;
     private final String message;
-    private final String projectDir;
 
-    public ScriptRunnerJob(String scriptPath, String hash, String message, String projectDir)
+    public ScriptRunnerJob(String scriptPath, String projectDir, String command, String hash, String message)
     {
-        super("Running Push Script"); //$NON-NLS-1$
+        super("Отправка в хранилище"); //$NON-NLS-1$
         this.scriptPath = scriptPath;
+        this.projectDir = projectDir;
+        this.command = command;
         this.hash = hash;
         this.message = message;
-        this.projectDir = projectDir;
         this.setUser(true);
         this.setProperty(IProgressConstants.KEEP_PROPERTY, Boolean.TRUE);
     }
@@ -44,10 +46,10 @@ public class ScriptRunnerJob
     @Override
     protected IStatus run(IProgressMonitor monitor)
     {
-        monitor.beginTask("Starting script...", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+        monitor.beginTask("", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 
         ProcessBuilder pb =
-            new ProcessBuilder(Arrays.asList("oscript", scriptPath, "createfile", "-h", hash, "-m", message)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            new ProcessBuilder(Arrays.asList("oscript", scriptPath, command, "-h", hash, "-m", message)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         pb.redirectErrorStream(true);
         pb.directory(new File(projectDir));
 
@@ -81,7 +83,7 @@ public class ScriptRunnerJob
                 }
                 catch (IOException e)
                 {
-                    logError("Error reading script output: " + e.getMessage(), e); //$NON-NLS-1$
+                    logError("Ошибка чтения вывода: " + e.getMessage(), e); //$NON-NLS-1$
                 }
             });
             outputThread.start();
@@ -91,7 +93,7 @@ public class ScriptRunnerJob
                 if (monitor.isCanceled())
                 {
                     process.destroy();
-                    monitor.subTask("Script cancelled by user."); //$NON-NLS-1$
+                    monitor.subTask("Выполнение отменено пользователем."); //$NON-NLS-1$
                     return Status.CANCEL_STATUS;
                 }
                 Thread.sleep(100);
@@ -102,20 +104,20 @@ public class ScriptRunnerJob
             int exitCode = process.exitValue();
             if (exitCode != 0)
             {
-                String errorMsg = "Script failed with code " + exitCode; //$NON-NLS-1$
+                String errorMsg = "Вернулся код ошибки " + exitCode; //$NON-NLS-1$
                 monitor.subTask(errorMsg);
                 IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg);
                 return errorStatus;
             }
             else
             {
-                monitor.subTask("Script completed successfully."); //$NON-NLS-1$
+                monitor.subTask("Операция выполнена."); //$NON-NLS-1$
                 return Status.OK_STATUS;
             }
         }
         catch (IOException | InterruptedException e)
         {
-            String errorMsg = "Failed to run script: " + e.getMessage(); //$NON-NLS-1$
+            String errorMsg = "Ошибка во время выполнения: " + e.getMessage(); //$NON-NLS-1$
             monitor.subTask(errorMsg);
             IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg, e);
             return errorStatus;

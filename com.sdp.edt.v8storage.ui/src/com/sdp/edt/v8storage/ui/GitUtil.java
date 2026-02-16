@@ -19,7 +19,7 @@ import com._1c.g5.v8.dt.common.git.GitUtils;
 public class GitUtil
 {
 
-    public static String getInstructionFromGit(IWorkbenchWindow window)
+    public static String getCommitContextInfo(IWorkbenchWindow window)
     {
         try
         {
@@ -35,21 +35,19 @@ public class GitUtil
                 return "Проект не является Git-репозиторием."; //$NON-NLS-1$
             }
 
-            // Получаем HEAD commit
             RevCommit headCommit = getHeadCommit(repository);
             if (headCommit == null)
             {
-                return "Ошибка: Не удалось получить HEAD commit."; //$NON-NLS-1$
+                return "Не удалось получить HEAD commit."; //$NON-NLS-1$
             }
-            String headInfo = "HEAD commit " + headCommit.getId().getName(); //$NON-NLS-1$
 
-            // Получаем parent commit info
+            String headInfo = "HEAD commit " + headCommit.getId().getName(); //$NON-NLS-1$
             String parentInfo = getParentCommitInfo(headCommit, repository);
 
-            return headInfo + "\n" + parentInfo; // Вертикальное размещение //$NON-NLS-1$
+            return headInfo + "\n" + parentInfo; //$NON-NLS-1$
         }
         catch (Exception e)
-        { // Ловим все исключения
+        {
             return "Ошибка: " + e.getMessage(); //$NON-NLS-1$
         }
     }
@@ -71,7 +69,7 @@ public class GitUtil
             }
 
             ObjectId headId = repository.resolve("HEAD"); //$NON-NLS-1$
-            return headId != null ? headId.getName() : ""; //$NON-NLS-1$
+            return headId == null ? "" : headId.getName(); //$NON-NLS-1$
         }
         catch (Exception e)
         {

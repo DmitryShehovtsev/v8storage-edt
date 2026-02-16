@@ -26,8 +26,8 @@ public class PushDialog
     private Text messageCommitText;
     private String hashValue;
     private String messageValue;
-    private String instructionText; // Генерируется внутри
-    private final CommitHandler handler; // Callback для обработки ввода
+    private String commitContextInfo;
+    private final CommitHandler handler;
 
     public PushDialog(Shell parentShell, CommitHandler handler)
     {
@@ -41,7 +41,6 @@ public class PushDialog
         super.configureShell(newShell);
         newShell.setText("Отправка в хранилище"); //$NON-NLS-1$
         newShell.setSize(400, 400);
-        //newShell.setMinimumSize(200, 200);
 
         Shell parent = getParentShell();
         if (parent != null)
@@ -57,7 +56,6 @@ public class PushDialog
     @Override
     protected int getShellStyle()
     {
-        // Немодальный стиль: MODELESS + RESIZE + TITLE + BORDER
         return SWT.MODELESS | SWT.RESIZE | SWT.TITLE | SWT.BORDER;
     }
 
@@ -70,23 +68,20 @@ public class PushDialog
         layout.verticalSpacing = 5;
         container.setLayout(layout);
 
-        // Вручную добавляем title label (как в TitleAreaDialog)
         Label titleLabel = new Label(container, SWT.NONE);
         titleLabel.setText("Отправка коммита"); //$NON-NLS-1$
         titleLabel.setFont(
             org.eclipse.jface.resource.JFaceResources.getFont(org.eclipse.jface.resource.JFaceResources.BANNER_FONT));
         titleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        // Генерируем instructionText (после создания shell, чтобы GC работал)
-        instructionText = GitUtil.getInstructionFromGit(null);
+        commitContextInfo = GitUtil.getCommitContextInfo(null);
 
-        // Read-only Text для instructionText
-        Text instructionTextWidget = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-        GridData instructionData = new GridData(SWT.FILL, SWT.FILL, true, false);
-        instructionData.heightHint = computeTextHeightHint(2);
-        instructionData.widthHint = 300;
-        instructionTextWidget.setLayoutData(instructionData);
-        instructionTextWidget.setText(instructionText);
+        Text TextWidget = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
+        GridData gData = new GridData(SWT.FILL, SWT.FILL, true, false);
+        gData.heightHint = computeTextHeightHint(2);
+        gData.widthHint = 300;
+        TextWidget.setLayoutData(gData);
+        TextWidget.setText(commitContextInfo);
 
         Label hashLabel = new Label(container, SWT.NONE);
         hashLabel.setText("Хэш коммита-предка:"); //$NON-NLS-1$
@@ -132,7 +127,6 @@ public class PushDialog
             }
             hashValue = hashCommitText.getText().trim();
             messageValue = message;
-            // Вызываем callback и закрываем диалог
             if (handler != null)
             {
                 handler.onCommit(hashValue, messageValue);
@@ -168,8 +162,6 @@ public class PushDialog
         return lineHeight * numLines + 20;
     }
 
-    // Геттеры больше не нужны, т.к. данные передаются в callback
-    // Но оставим для совместимости, если нужно
     public String getHash()
     {
         return hashValue;

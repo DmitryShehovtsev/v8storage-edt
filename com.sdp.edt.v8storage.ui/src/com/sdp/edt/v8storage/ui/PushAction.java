@@ -28,26 +28,24 @@ public class PushAction
         IProject activeProject = GitUtil.getActiveProject(null);
         if (activeProject == null)
         {
-            MessageDialog.openError(shell, "Error", "No active project found."); //$NON-NLS-1$ //$NON-NLS-2$
+            MessageDialog.openError(shell, "Ошибка", "Не обнаружен активный проект."); //$NON-NLS-1$ //$NON-NLS-2$
             return null;
         }
         IPath projectLocation = activeProject.getLocation();
         String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
-//        String scriptPath2 = projectLocation.append("edt-helper-test") //$NON-NLS-1$
-//            .append("main.os") //$NON-NLS-1$
-//            .toOSString();
 
         String projectDir = projectLocation.toOSString();
 
         File scriptFile = new File(scriptPath);
         if (!scriptFile.exists() || !scriptFile.isFile())
         {
-            MessageDialog.openError(shell, "Error", "Script file not found: " + scriptPath); //$NON-NLS-1$ //$NON-NLS-2$
+            MessageDialog.openError(shell, "Ошибка", //$NON-NLS-1$
+                "Неопределен путь к скрипту синхронизации с хранилищем: " + scriptPath); //$NON-NLS-1$
             return null;
         }
 
         CommitHandler callback = (hash, message) -> {
-            ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, hash, message, projectDir);
+            ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, "createfile", hash, message); //$NON-NLS-1$
             job.schedule();
         };
 
