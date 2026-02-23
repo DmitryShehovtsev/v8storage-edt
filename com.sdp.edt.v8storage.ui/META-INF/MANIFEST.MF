@@ -5,6 +5,8 @@ Bundle-SymbolicName: com.sdp.edt.v8storage.ui;singleton:=true
 Bundle-Version: 0.0.1.qualifier
 Bundle-Activator: com.sdp.edt.v8storage.ui.Activator
 Bundle-Vendor: SDP
+Bundle-Description: Integration plugin for V8 Storage synchronization with Git in 1C:EDT.
+Bundle-License: Eclipse Public License 2.0;https://www.eclipse.org/legal/epl-2.0/
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.resources;bundle-version="3.20.0",
@@ -15,3 +17,4 @@ Require-Bundle: org.eclipse.ui,
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Automatic-Module-Name: com.sdp.edt.v8storage.ui
 Bundle-ActivationPolicy: lazy
+Bundle-Localization: plugin

@@ -39,7 +39,7 @@ public class PushDialog
     protected void configureShell(Shell newShell)
     {
         super.configureShell(newShell);
-        newShell.setText("Отправка в хранилище"); //$NON-NLS-1$
+        newShell.setText(Messages.PushDialog_Header);
         newShell.setSize(400, 400);
 
         Shell parent = getParentShell();
@@ -69,7 +69,7 @@ public class PushDialog
         container.setLayout(layout);
 
         Label titleLabel = new Label(container, SWT.NONE);
-        titleLabel.setText("Отправка коммита"); //$NON-NLS-1$
+        titleLabel.setText(Messages.PushDialog_Title);
         titleLabel.setFont(
             org.eclipse.jface.resource.JFaceResources.getFont(org.eclipse.jface.resource.JFaceResources.BANNER_FONT));
         titleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -84,7 +84,7 @@ public class PushDialog
         TextWidget.setText(commitContextInfo);
 
         Label hashLabel = new Label(container, SWT.NONE);
-        hashLabel.setText("Хэш коммита-предка:"); //$NON-NLS-1$
+        hashLabel.setText(Messages.PushDialog_hashLabel);
         hashLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
         hashCommitText = new Text(container, SWT.BORDER | SWT.SINGLE);
@@ -93,7 +93,7 @@ public class PushDialog
         hashCommitText.setText(GitUtil.getParentHash(null));
 
         Label messageLabel = new Label(container, SWT.NONE);
-        messageLabel.setText("Сообщение коммита:"); //$NON-NLS-1$
+        messageLabel.setText(Messages.PushDialog_messageLabel);
         messageLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
         messageCommitText = new Text(container, SWT.BORDER | SWT.MULTI | SWT.WRAP);
@@ -122,7 +122,7 @@ public class PushDialog
             String message = messageCommitText.getText().trim();
             if (message.isEmpty())
             {
-                MessageDialog.openError(getShell(), "Проверка", "Не заполнено сообщение коммита."); //$NON-NLS-1$ //$NON-NLS-2$
+                MessageDialog.openError(getShell(), Messages.PushDialog_check, Messages.PushDialog_checkMessage);
                 return;
             }
             hashValue = hashCommitText.getText().trim();

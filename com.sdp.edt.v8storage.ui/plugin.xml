@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
-<plugin>
+<plugin providerName="SDP">
    <extension point="org.eclipse.ui.preferencePages">
       <page
             class="com.sdp.edt.v8storage.ui.V8StoragePreferencePage"
             id="com.sdp.edt.v8storage.ui.preferencePage"
-            name="Интеграция с хранилищем конфигурации (V8 Storage)">
+            name="%preferencePageName">
       </page>
-   </extension>
+    </extension>
    <extension point="org.eclipse.ui.commands">
       <command
             id="com.sdp.edt.v8storage.ui.pullCommand"
-            name="Pull">
+            name="%pullCommandName">
       </command>
       <command
             id="com.sdp.edt.v8storage.ui.pushCommand"
-            name="Push">
+            name="%pushCommandName">
       </command>
    </extension>
    <extension point="org.eclipse.ui.menus">
@@ -23,17 +23,17 @@
             locationURI="toolbar:org.eclipse.team.ui.GenericHistoryView?after=additions">
          <command
                commandId="com.sdp.edt.v8storage.ui.pullCommand"
-               label="Pull"
+               label="%pullCommandLabel"
                style="push"
-               tooltip="Получить из хранилища"
+               tooltip="%pullCommandTooltip"
                icon="icons/pull.png">
          </command>
          <command
                commandId="com.sdp.edt.v8storage.ui.pushCommand"
                icon="icons/push.png"
-               label="Push"
+               label="%pushCommandLabel"
                style="push"
-               tooltip="Отправить в хранилище">
+               tooltip="%pushCommandTooltip">
          </command>
       </menuContribution>
    </extension>

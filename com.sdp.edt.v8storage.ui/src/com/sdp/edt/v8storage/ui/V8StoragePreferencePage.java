@@ -1,7 +1,6 @@
 package com.sdp.edt.v8storage.ui;
 
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
@@ -14,16 +13,16 @@ public class V8StoragePreferencePage
     {
         super(GRID);
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
-        setDescription("Консольное приложение, реализующее команды синхронизации с хранилищем"); //$NON-NLS-1$
+        setTitle(Messages.V8StoragePreferencePage_PageName);
+        setDescription(Messages.V8StoragePreferencePage_Description);
     }
 
     @Override
     public void createFieldEditors()
     {
-        StringFieldEditor scriptEditor =
-            new StringFieldEditor(Activator.PREF_SCRIPT_PATH, "Путь к исполняемому файлу:", getFieldEditorParent()); //$NON-NLS-1$
-        scriptEditor.setEmptyStringAllowed(true);
-        addField(scriptEditor);
+        FieldPreferencesChecker checkerField = new FieldPreferencesChecker(Activator.PREF_SCRIPT_PATH,
+            Messages.V8StoragePreferencePage_ScriptPath, getFieldEditorParent());
+        addField(checkerField);
     }
 
     @Override

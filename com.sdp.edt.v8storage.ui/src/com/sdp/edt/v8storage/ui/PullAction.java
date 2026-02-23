@@ -27,7 +27,7 @@ public class PullAction
         IProject activeProject = GitUtil.getActiveProject(null);
         if (activeProject == null)
         {
-            MessageDialog.openError(shell, "Ошибка", "Не обнаружен активный проект."); //$NON-NLS-1$ //$NON-NLS-2$
+            MessageDialog.openError(shell, Messages.Error_Exception, Messages.Error_NoActiveProject);
             return null;
         }
         IPath projectLocation = activeProject.getLocation();
@@ -38,12 +38,13 @@ public class PullAction
         File scriptFile = new File(scriptPath);
         if (!scriptFile.exists() || !scriptFile.isFile())
         {
-            MessageDialog.openError(shell, "Ошибка", //$NON-NLS-1$
-                "Неопределен путь к скрипту синхронизации с хранилищем: " + scriptPath); //$NON-NLS-1$
+            MessageDialog.openError(shell, Messages.V8StoragePreferencePage_Error,
+                Messages.V8StoragePreferencePage_InvalidPath);
             return null;
         }
 
-        ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, "createfile", "test1", "test2"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        String header = Messages.ScriptRunnerJob_Pull;
+        ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, "v8storage pull", header); //$NON-NLS-1$
         job.schedule();
 
         return null;

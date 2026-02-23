@@ -28,7 +28,7 @@ public class PushAction
         IProject activeProject = GitUtil.getActiveProject(null);
         if (activeProject == null)
         {
-            MessageDialog.openError(shell, "Ошибка", "Не обнаружен активный проект."); //$NON-NLS-1$ //$NON-NLS-2$
+            MessageDialog.openError(shell, Messages.Error_Exception, Messages.Error_NoActiveProject);
             return null;
         }
         IPath projectLocation = activeProject.getLocation();
@@ -39,13 +39,15 @@ public class PushAction
         File scriptFile = new File(scriptPath);
         if (!scriptFile.exists() || !scriptFile.isFile())
         {
-            MessageDialog.openError(shell, "Ошибка", //$NON-NLS-1$
-                "Неопределен путь к скрипту синхронизации с хранилищем: " + scriptPath); //$NON-NLS-1$
+            MessageDialog.openError(shell, Messages.Error_Exception,
+                Messages.V8StoragePreferencePage_InvalidPath + ": " + scriptPath); //$NON-NLS-1$
             return null;
         }
 
         CommitHandler callback = (hash, message) -> {
-            ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, "createfile", hash, message); //$NON-NLS-1$
+            String commandText = "v8storage push -f -h %h -m %m".formatted(hash, message); //$NON-NLS-1$
+            String header = Messages.PushDialog_Header;
+            ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, commandText, header);
             job.schedule();
         };
 

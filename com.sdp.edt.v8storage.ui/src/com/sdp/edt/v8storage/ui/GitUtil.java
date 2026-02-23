@@ -26,19 +26,19 @@ public class GitUtil
             IProject project = getActiveProject(window);
             if (project == null)
             {
-                return "Не обнаружен активный проект."; //$NON-NLS-1$
+                return Messages.Error_NoActiveProject;
             }
 
             Repository repository = GitUtils.getGitRepository(project);
             if (repository == null)
             {
-                return "Проект не является Git-репозиторием."; //$NON-NLS-1$
+                return Messages.Error_NotGitRepository;
             }
 
             RevCommit headCommit = getHeadCommit(repository);
             if (headCommit == null)
             {
-                return "Не удалось получить HEAD commit."; //$NON-NLS-1$
+                return Messages.Error_NoHeadCommit;
             }
 
             String headInfo = "HEAD commit " + headCommit.getId().getName(); //$NON-NLS-1$
@@ -48,7 +48,7 @@ public class GitUtil
         }
         catch (Exception e)
         {
-            return "Ошибка: " + e.getMessage(); //$NON-NLS-1$
+            return Messages.Error_Exception + ": " + e.getMessage(); //$NON-NLS-1$
         }
     }
 
@@ -133,7 +133,7 @@ public class GitUtil
         }
         else
         {
-            return "Нет parent-коммита (возможно, initial commit)."; //$NON-NLS-1$
+            return Messages.Error_NoParentCommit;
         }
     }
 

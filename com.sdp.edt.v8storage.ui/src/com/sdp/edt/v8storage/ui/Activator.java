@@ -14,13 +14,15 @@ public class Activator extends AbstractUIPlugin {
 
     private static Activator plugin;
 
+    private IPreferenceStore store;
+
     @Override
     public void start(BundleContext context) throws Exception
     {
         super.start(context);
         plugin = this;
 
-        IPreferenceStore store = new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID);
+        store = new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID);
         store.setDefault(PREF_SCRIPT_PATH, ""); //$NON-NLS-1$
     }
 
@@ -34,6 +36,12 @@ public class Activator extends AbstractUIPlugin {
     public static Activator getDefault()
     {
         return plugin;
+    }
+
+    @Override
+    public IPreferenceStore getPreferenceStore()
+    {
+        return store;
     }
 
 }
