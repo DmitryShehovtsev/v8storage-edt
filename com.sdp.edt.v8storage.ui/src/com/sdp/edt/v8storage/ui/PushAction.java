@@ -45,7 +45,7 @@ public class PushAction
         }
 
         CommitHandler callback = (hash, message) -> {
-            String commandText = "v8storage push -f -h %h -m %m".formatted(hash, message); //$NON-NLS-1$
+            String commandText = String.format("v8storage push -f -h \"%s\" -m \"%s\"", hash, message); //$NON-NLS-1$
             String header = Messages.PushDialog_Header;
             ScriptRunnerJob job = new ScriptRunnerJob(scriptPath, projectDir, commandText, header);
             job.schedule();
