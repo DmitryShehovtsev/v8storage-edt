@@ -3,7 +3,8 @@ Bundle-ManifestVersion: 2
 Bundle-Name: V8 Storage Plugin
 Bundle-SymbolicName: com.sdp.edt.v8storage.ui;singleton:=true
 Bundle-Version: 0.0.1.qualifier
-Import-Package: com._1c.g5.wiring;version="2.4.0",
+Import-Package: com._1c.g5.v8.dt.common.runtime;version="2.0.0",
+ com._1c.g5.wiring;version="2.4.0",
  com._1c.g5.wiring.binder;version="1.2.0",
  com.e1c.g5.dt.applications;version="6.0.0"
 Bundle-Activator: com.sdp.edt.internal.v8storage.Activator

@@ -3,6 +3,7 @@ package com.sdp.edt.internal.v8storage.ui;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
@@ -21,7 +22,8 @@ public class PushActionHandler
             shell = window.getShell();
         }
 
-        PushAction action = new PushAction(shell);
+        IProject project = CommonUI.getActiveProject();
+        PushAction action = new PushAction(project, shell);
         action.run();
 
         return null;

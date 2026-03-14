@@ -7,5 +7,7 @@ public interface IActions
     String header();
 
     String command();
+
+    String scriptEngine();
 }
 

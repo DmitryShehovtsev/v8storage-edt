@@ -21,11 +21,13 @@ public class Messages
     public static String Error_Exception;
     public static String Error_NoParentCommit;
 
+    public static String PushDialog_Header;
     public static String PushDialog_Title;
     public static String PushDialog_hashLabel;
     public static String PushDialog_messageLabel;
     public static String PushDialog_check;
     public static String PushDialog_checkMessage;
+    public static String PushDialog_Description;
 
     public static String ScriptRunnerJob_ErrorReading;
     public static String ScriptRunnerJob_UserCancel;
@@ -34,6 +36,8 @@ public class Messages
     public static String ScriptRunnerJob_ErrorDuringExecution;
     public static String ScriptRunnerJob_Pull;
     public static String ScriptRunnerJob_Push;
+
+    public static String Application_Error;
 
     static
     {

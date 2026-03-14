@@ -1,13 +1,12 @@
 package com.sdp.edt.internal.v8storage.ui;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.graphics.FontMetrics;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -21,18 +20,44 @@ import org.eclipse.swt.widgets.Text;
 public class PushDialog
     extends Dialog
 {
+    private static PushDialog instance;
 
     private Text hashCommitText;
     private Text messageCommitText;
-    private String hashValue;
-    private String messageValue;
-    private String commitContextInfo;
-    private final ICommitHandler handler;
+    private Text commitInfoText;
+    private IProject project;
+    private ICommitHandler handler;
 
-    public PushDialog(Shell parentShell, ICommitHandler handler)
+    private PushDialog(Shell parentShell, ICommitHandler handler)
     {
         super(parentShell);
         this.handler = handler;
+        this.project = CommonUI.getActiveProject();
+    }
+
+    public static void show(Shell parentShell, ICommitHandler handler)
+    {
+        if (instance != null && instance.getShell() != null && !instance.getShell().isDisposed())
+        {
+            instance.handler = handler;
+            instance.updateContent();
+            instance.getShell().forceActive();
+        }
+        else
+        {
+            instance = new PushDialog(parentShell, handler);
+            instance.open();
+            instance.getShell().addDisposeListener(e -> instance = null);
+        }
+    }
+
+    private void updateContent()
+    {
+        project = CommonUI.getActiveProject();
+        commitInfoText.setText(GitActions.getCommitContextInfo(project));
+        hashCommitText.setText(GitActions.getParentHash(project));
+        messageCommitText.setText(""); //$NON-NLS-1$
+        messageCommitText.setFocus();
     }
 
     @Override
@@ -40,7 +65,7 @@ public class PushDialog
     {
         super.configureShell(newShell);
         newShell.setText(Messages.PushDialog_Header);
-        newShell.setSize(400, 400);
+        newShell.setSize(420, 400);
 
         Shell parent = getParentShell();
         if (parent != null)
@@ -61,47 +86,52 @@ public class PushDialog
 
     @Override
     protected Control createDialogArea(Composite parent) {
+
         Composite container = (Composite) super.createDialogArea(parent);
         GridLayout layout = new GridLayout(1, false);
         layout.marginHeight = 10;
         layout.marginWidth = 10;
-        layout.verticalSpacing = 5;
         container.setLayout(layout);
 
-        Label titleLabel = new Label(container, SWT.NONE);
-        titleLabel.setText(Messages.PushDialog_Title);
-        titleLabel.setFont(
-            org.eclipse.jface.resource.JFaceResources.getFont(org.eclipse.jface.resource.JFaceResources.BANNER_FONT));
-        titleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        Label hintLabel = new Label(container, SWT.WRAP);
+        hintLabel.setText(Messages.PushDialog_Description);
+        hintLabel.setForeground(container.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BORDER));
+        hintLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        commitContextInfo = GitActions.getCommitContextInfo(null);
+        addSpacer(container);
 
-        Text TextWidget = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-        GridData gData = new GridData(SWT.FILL, SWT.FILL, true, false);
-        gData.heightHint = computeTextHeightHint(2);
-        gData.widthHint = 300;
-        TextWidget.setLayoutData(gData);
-        TextWidget.setText(commitContextInfo);
+        commitInfoText = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
+        commitInfoText.setText(GitActions.getCommitContextInfo(project));
+        commitInfoText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+
+        addSpacer(container);
 
         Label hashLabel = new Label(container, SWT.NONE);
         hashLabel.setText(Messages.PushDialog_hashLabel);
         hashLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
         hashCommitText = new Text(container, SWT.BORDER | SWT.SINGLE);
+        hashCommitText.setText(GitActions.getParentHash(project));
         hashCommitText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        hashCommitText.addKeyListener(createEnterKeyListener());
-        hashCommitText.setText(GitActions.getParentHash(null));
+        hashCommitText.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyPressed(KeyEvent e)
+            {
+                if (e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR)
+                {
+                    buttonPressed(IDialogConstants.OK_ID);
+                }
+            }
+        });
 
         Label messageLabel = new Label(container, SWT.NONE);
         messageLabel.setText(Messages.PushDialog_messageLabel);
         messageLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
-        messageCommitText = new Text(container, SWT.BORDER | SWT.MULTI | SWT.WRAP);
+        messageCommitText = new Text(container, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
         GridData messageData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        messageData.heightHint = computeTextHeightHint(5);
-        messageData.widthHint = 300;
         messageCommitText.setLayoutData(messageData);
-
         messageCommitText.setFocus();
 
         return container;
@@ -117,58 +147,35 @@ public class PushDialog
     @Override
     protected void buttonPressed(int buttonId)
     {
-        if (buttonId == IDialogConstants.OK_ID)
+        switch (buttonId)
         {
+        case IDialogConstants.OK_ID:
             String message = messageCommitText.getText().trim();
             if (message.isEmpty())
             {
                 MessageDialog.openError(getShell(), Messages.PushDialog_check, Messages.PushDialog_checkMessage);
                 return;
             }
-            hashValue = hashCommitText.getText().trim();
-            messageValue = message;
+            String hashValue = hashCommitText.getText().trim();
             if (handler != null)
             {
-                handler.onCommit(hashValue, messageValue);
+                handler.onCommit(hashValue, message);
             }
             close();
-        }
-        else if (buttonId == IDialogConstants.CANCEL_ID)
-        {
+            break;
+        case IDialogConstants.CANCEL_ID:
             close();
+            break;
         }
+
         super.buttonPressed(buttonId);
     }
 
-    private KeyAdapter createEnterKeyListener()
+    private void addSpacer(Composite container)
     {
-        return new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR)
-                {
-                    buttonPressed(IDialogConstants.OK_ID);
-                }
-            }
-        };
-    }
-
-    private int computeTextHeightHint(int numLines)
-    {
-        GC gc = new GC(getShell());
-        FontMetrics fm = gc.getFontMetrics();
-        int lineHeight = fm.getHeight();
-        gc.dispose();
-        return lineHeight * numLines + 20;
-    }
-
-    public String getHash()
-    {
-        return hashValue;
-    }
-
-    public String getMessage()
-    {
-        return messageValue;
+        Label spacer = new Label(container, SWT.NONE);
+        GridData spacerData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        spacerData.heightHint = 10;
+        spacer.setLayoutData(spacerData);
     }
 }

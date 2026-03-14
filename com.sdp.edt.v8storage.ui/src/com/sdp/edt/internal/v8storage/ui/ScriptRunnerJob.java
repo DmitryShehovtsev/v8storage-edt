@@ -13,15 +13,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleManager;
@@ -31,13 +27,12 @@ import org.eclipse.ui.progress.IProgressConstants;
 
 import com._1c.g5.wiring.ServiceAccess;
 import com._1c.g5.wiring.ServiceSupplier;
-import com.e1c.g5.dt.applications.ApplicationException;
+import com.e1c.g5.dt.applications.ApplicationUpdateState;
 import com.e1c.g5.dt.applications.ApplicationUpdateType;
 import com.e1c.g5.dt.applications.ExecutionContext;
 import com.e1c.g5.dt.applications.IApplication;
 import com.e1c.g5.dt.applications.IApplicationManager;
 import com.sdp.edt.internal.v8storage.Activator;
-import com.sdp.edt.internal.v8storage.preferences.PreferencesChecks;
 
 public class ScriptRunnerJob
     extends Job
@@ -46,6 +41,7 @@ public class ScriptRunnerJob
     private static final String CONSOLE_NAME = "V8 Storage Output"; //$NON-NLS-1$
 
     private final IActions action;
+    private final IProject project;
     private final Shell shell;
 
     private ServiceSupplier<IApplicationManager> applicationManager =
@@ -61,11 +57,12 @@ public class ScriptRunnerJob
         return applicationManager.get();
     }
 
-    public ScriptRunnerJob(IActions action, Shell shell)
+    public ScriptRunnerJob(IActions action, IProject project, Shell shell)
     {
         super(action.header());
 
         this.action = action;
+        this.project = project;
         this.shell = shell;
         this.setUser(true);
         this.setProperty(IProgressConstants.KEEP_PROPERTY, Boolean.TRUE);
@@ -74,56 +71,93 @@ public class ScriptRunnerJob
     @Override
     protected IStatus run(IProgressMonitor monitor)
     {
-        monitor.beginTask("", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+        IStatus status = null;
 
-        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-        IProject project = GitActions.getActiveProject(window);
-        if (project == null)
+        status = Status.CANCEL_STATUS;
+        monitor.subTask("Требуется вручную завершить обновление и повторить операцию");
+        try
         {
-            String errorMsg = Messages.Error_NoActiveProject;
-            MessageDialog.openError(shell, Messages.Error_Exception, errorMsg);
-            IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg);
-            return errorStatus;
+            Thread.sleep(10000); // Пауза на 1 секунду
         }
-
-        String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
-        if (!PreferencesChecks.FileExistsUI(scriptPath, shell))
+        catch (InterruptedException e)
         {
-            String errorMsg = PreferencesChecks.messageInvalidPath();
-            IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg);
-            return errorStatus;
+            Thread.currentThread().interrupt();
         }
-
-        applicationUpdate(project, monitor);
-
-        IPath projectLocation = project.getLocation();
-        String cwd = projectLocation.toOSString();
-        IStatus status = processRun(scriptPath, cwd, monitor);
+//        ApplicationUpdateState updateState = null;
+//        String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
+//        if (!PreferencesChecks.FileExistsUI(scriptPath))
+//        {
+//            String errorMsg = PreferencesChecks.messageInvalidPath();
+//            return logError(errorMsg, null);
+//        }
+//        try
+//        {
+//            IProgressMonitor monitorUpdateApp = new NullProgressMonitor();
+//            monitorUpdateApp.beginTask("Обновление приложения", IProgressMonitor.UNKNOWN);
+//            updateState = applicationUpdate(project, monitorUpdateApp);
+//        }
+//        catch (ApplicationException e)
+//        {
+//            String errorMsg = Messages.Application_Error;
+//            return logError(errorMsg, null);
+//        }
+//
+//        if (updateState == ApplicationUpdateState.UPDATED)
+//        {
+//            IPath projectLocation = project.getLocation();
+//            String cwd = projectLocation.toOSString();
+//            //status = scriptRun(scriptPath, cwd, monitor);
+//        }
+//        else
+//        {
+//            status = Status.CANCEL_STATUS;
+//            monitor.subTask("Требуется вручную завершить обновление и повторить операцию");
+//        }
 
         return status;
 
+
+
+        //ApplicationUpdateState updateState = null;
+
+//        return ProgressMonitors.computeWithSubMonitor("", IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
+//            IStatus status = null;
+//            ApplicationUpdateState updateState = applicationUpdate(project, subMonitor.split(1));
+//            if (updateState == ApplicationUpdateState.UPDATED)
+//            {
+//                IPath projectLocation = project.getLocation();
+//                String cwd = projectLocation.toOSString();
+//                //IStatus status = scriptRun(scriptPath, cwd, subMonitor.split(1));
+//            }
+//            else
+//            {
+//                status = Status.CANCEL_STATUS;
+//                subMonitor.split(1).subTask("Требуется вручную завершить обновление и повторить операцию");
+//            }
+//            return status;
+//        });
+
+
+
+        //IStatus status = Status.OK_STATUS;
+
     }
 
-    private void applicationUpdate(IProject project, IProgressMonitor monitor)
+    private ApplicationUpdateState applicationUpdate(IProject project, IProgressMonitor monitor)
     {
-        try
-        {
-            IApplicationManager applicationManager = getApplicationManager();
-            Optional<IApplication> application = applicationManager.getDefaultApplication(project);
-            ExecutionContext context = new ExecutionContext(Map.of("activeShell", shell)); //$NON-NLS-1$
-            applicationManager.prepare(application.get(), "debug", context, monitor); //$NON-NLS-1$
+        IApplicationManager applicationManager = getApplicationManager();
+        Optional<IApplication> application = applicationManager.getDefaultApplication(project);
+        ExecutionContext context = new ExecutionContext(Map.of("activeShell", shell)); //$NON-NLS-1$
+        applicationManager.prepare(application.get(), "debug", context, monitor); //$NON-NLS-1$
+        ApplicationUpdateState updateState =
             applicationManager.update(application.get(), ApplicationUpdateType.INCREMENTAL, context, monitor);
-        }
-        catch (ApplicationException e)
-        {
-            throw new ApplicationException("Error working with the application", e);
-        }
+        return updateState;
     }
 
-    private IStatus processRun(String scriptPath, String cwd, IProgressMonitor monitor)
+    private IStatus scriptRun(String scriptPath, String cwd, IProgressMonitor monitor)
     {
         List<String> cmd = new ArrayList<>();
-        cmd.add("oscript"); //$NON-NLS-1$
+        cmd.add(action.scriptEngine());
         cmd.add(scriptPath);
         cmd.addAll(Arrays.asList(action.command().trim().split("\\s+"))); //$NON-NLS-1$
 
@@ -136,34 +170,7 @@ public class ScriptRunnerJob
         {
             process = pb.start();
 
-            MessageConsole console = findOrCreateConsole();
-            MessageConsoleStream outputStream = console.newMessageStream();
-
-            String osName = System.getProperty("os.name").toLowerCase(); //$NON-NLS-1$
-            Charset charset = osName.contains("win") ? Charset.forName("CP866") : StandardCharsets.UTF_8; //$NON-NLS-1$ //$NON-NLS-2$
-
-            Process finalProcess = process;
-            Thread outputThread = new Thread(() -> {
-                try (BufferedReader reader =
-                    new BufferedReader(
-                        new InputStreamReader(finalProcess.getInputStream(), charset)))
-                {
-                    String line;
-                    while ((line = reader.readLine()) != null)
-                    {
-                        if (monitor.isCanceled())
-                        {
-                            break;
-                        }
-                        outputStream.println(line);
-                        monitor.subTask(line);
-                    }
-                }
-                catch (IOException e)
-                {
-                    logError(Messages.ScriptRunnerJob_ErrorReading + ": " + e.getMessage(), e); //$NON-NLS-1$
-                }
-            });
+            Thread outputThread = newOutputThread(process, monitor);
             outputThread.start();
 
             while (process.isAlive())
@@ -182,10 +189,9 @@ public class ScriptRunnerJob
             int exitCode = process.exitValue();
             if (exitCode != 0)
             {
-                String errorMsg = Messages.ScriptRunnerJob_ErrorCode + " " + exitCode; //$NON-NLS-1$
+                String errorMsg = String.format("%s %s", Messages.ScriptRunnerJob_ErrorCode, exitCode); //$NON-NLS-1$
                 monitor.subTask(errorMsg);
-                IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg);
-                return errorStatus;
+                return logError(errorMsg, null);
             }
             else
             {
@@ -195,10 +201,9 @@ public class ScriptRunnerJob
         }
         catch (IOException | InterruptedException e)
         {
-            String errorMsg = Messages.ScriptRunnerJob_ErrorDuringExecution + ": " + e.getMessage(); //$NON-NLS-1$
+            String errorMsg = String.format("%s: %s", Messages.ScriptRunnerJob_ErrorDuringExecution, e.getMessage()); //$NON-NLS-1$
             monitor.subTask(errorMsg);
-            IStatus errorStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, errorMsg, e);
-            return errorStatus;
+            return logError(errorMsg, e);
         }
         finally
         {
@@ -208,6 +213,37 @@ public class ScriptRunnerJob
                 process.destroy();
             }
         }
+    }
+
+    private Thread newOutputThread(Process process, IProgressMonitor monitor)
+    {
+        MessageConsole console = findOrCreateConsole();
+        MessageConsoleStream outputStream = console.newMessageStream();
+
+        String osName = System.getProperty("os.name").toLowerCase(); //$NON-NLS-1$
+        Charset charset = osName.contains("win") ? Charset.forName("CP866") : StandardCharsets.UTF_8; //$NON-NLS-1$ //$NON-NLS-2$
+
+        Thread outputThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset)))
+            {
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    if (monitor.isCanceled())
+                    {
+                        break;
+                    }
+                    outputStream.println(line);
+                    monitor.subTask(line);
+                }
+            }
+            catch (IOException e)
+            {
+                logError(String.format("%s: %s", Messages.ScriptRunnerJob_ErrorReading, e.getMessage()), e); //$NON-NLS-1$
+            }
+        });
+
+        return outputThread;
     }
 
     private MessageConsole findOrCreateConsole()
@@ -225,10 +261,11 @@ public class ScriptRunnerJob
         return newConsole;
     }
 
-    private void logError(String message, Throwable e)
+    private IStatus logError(String message, Throwable e)
     {
         IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, message, e);
         Activator.getDefault().getLog().log(status);
+        return status;
     }
 
 }
