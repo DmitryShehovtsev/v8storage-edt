@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,7 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.core.internal.jobs.JobManager;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -25,14 +28,17 @@ import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
 import org.eclipse.ui.progress.IProgressConstants;
 
+import com._1c.g5.v8.dt.common.runtime.ProgressMonitors;
 import com._1c.g5.wiring.ServiceAccess;
 import com._1c.g5.wiring.ServiceSupplier;
+import com.e1c.g5.dt.applications.ApplicationException;
 import com.e1c.g5.dt.applications.ApplicationUpdateState;
 import com.e1c.g5.dt.applications.ApplicationUpdateType;
 import com.e1c.g5.dt.applications.ExecutionContext;
 import com.e1c.g5.dt.applications.IApplication;
 import com.e1c.g5.dt.applications.IApplicationManager;
 import com.sdp.edt.internal.v8storage.Activator;
+import com.sdp.edt.internal.v8storage.preferences.PreferencesChecks;
 
 public class ScriptRunnerJob
     extends Job
@@ -71,79 +77,90 @@ public class ScriptRunnerJob
     @Override
     protected IStatus run(IProgressMonitor monitor)
     {
+        monitor.beginTask("", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+
         IStatus status = null;
 
-        status = Status.CANCEL_STATUS;
-        monitor.subTask("Требуется вручную завершить обновление и повторить операцию");
         try
         {
-            Thread.sleep(10000); // Пауза на 1 секунду
+            status = runWithSubMonitor(monitor);
         }
-        catch (InterruptedException e)
+        catch (InvocationTargetException e)
         {
-            Thread.currentThread().interrupt();
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            if (cause instanceof ApplicationException)
+            {
+               ApplicationException applicationError = (ApplicationException)cause;
+               ApplicationException eApp = (ApplicationException)cause;
+               status = applicationError.getStatus();
+               if (status.matches(status.CANCEL))
+               {
+                   logError("Задание отменено пользователем", eApp);
+               }
+               else
+               {
+                   logError(Messages.Application_Error, eApp);
+               }
+            }
+            else
+            {
+                logError(Messages.Application_Error, e);
+            }
         }
-//        ApplicationUpdateState updateState = null;
-//        String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
-//        if (!PreferencesChecks.FileExistsUI(scriptPath))
-//        {
-//            String errorMsg = PreferencesChecks.messageInvalidPath();
-//            return logError(errorMsg, null);
-//        }
-//        try
-//        {
-//            IProgressMonitor monitorUpdateApp = new NullProgressMonitor();
-//            monitorUpdateApp.beginTask("Обновление приложения", IProgressMonitor.UNKNOWN);
-//            updateState = applicationUpdate(project, monitorUpdateApp);
-//        }
-//        catch (ApplicationException e)
-//        {
-//            String errorMsg = Messages.Application_Error;
-//            return logError(errorMsg, null);
-//        }
-//
-//        if (updateState == ApplicationUpdateState.UPDATED)
-//        {
-//            IPath projectLocation = project.getLocation();
-//            String cwd = projectLocation.toOSString();
-//            //status = scriptRun(scriptPath, cwd, monitor);
-//        }
-//        else
-//        {
-//            status = Status.CANCEL_STATUS;
-//            monitor.subTask("Требуется вручную завершить обновление и повторить операцию");
-//        }
 
         return status;
+    }
 
+    private IStatus runWithSubMonitor(IProgressMonitor monitor) throws InvocationTargetException
+    {
+        return ProgressMonitors.computeWithSubMonitor("", IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
 
+            IStatus status = null;
+            ApplicationUpdateState updateState = null;
+            String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
+            if (!PreferencesChecks.FileExistsUI(scriptPath))
+            {
+                String errorMsg = PreferencesChecks.messageInvalidPath();
+                return logError(errorMsg, null);
+            }
+            try
+            {
+                updateState = applicationUpdate(project, subMonitor);
+            }
+            catch (ApplicationException e)
+            {
+                throw new InvocationTargetException(e);
+            }
 
-        //ApplicationUpdateState updateState = null;
+            switch (updateState)
+            {
+            case UPDATED:
+                {
+                    IPath projectLocation = project.getLocation();
+                    String cwd = projectLocation.toOSString();
+                    //status = scriptRun(scriptPath, cwd, subMonitor.split(IProgressMonitor.UNKNOWN));
+                    break;
+                }
+            case INCREMENTAL_UPDATE_REQUIRED:
+                {
+                    String message = "Требуется вручную завершить обновление и повторить операцию";
+                    Throwable t = new NullPointerException(message);
+                    status = new Status(IStatus.CANCEL, JobManager.PI_JOBS, JobManager.PLUGIN_ERROR, message, t);
+//                    this.setName(String.format("%s. %s", action.header(),
+//                        "Требуется вручную завершить обновление и повторить операцию"));
+                    break;
+            }
+            default:
+                throw new IllegalArgumentException("Unexpected value: " + updateState);
+            }
 
-//        return ProgressMonitors.computeWithSubMonitor("", IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
-//            IStatus status = null;
-//            ApplicationUpdateState updateState = applicationUpdate(project, subMonitor.split(1));
-//            if (updateState == ApplicationUpdateState.UPDATED)
-//            {
-//                IPath projectLocation = project.getLocation();
-//                String cwd = projectLocation.toOSString();
-//                //IStatus status = scriptRun(scriptPath, cwd, subMonitor.split(1));
-//            }
-//            else
-//            {
-//                status = Status.CANCEL_STATUS;
-//                subMonitor.split(1).subTask("Требуется вручную завершить обновление и повторить операцию");
-//            }
-//            return status;
-//        });
+            return status;
 
-
-
-        //IStatus status = Status.OK_STATUS;
-
+        });
     }
 
     private ApplicationUpdateState applicationUpdate(IProject project, IProgressMonitor monitor)
+        throws InvocationTargetException
     {
         IApplicationManager applicationManager = getApplicationManager();
         Optional<IApplication> application = applicationManager.getDefaultApplication(project);
