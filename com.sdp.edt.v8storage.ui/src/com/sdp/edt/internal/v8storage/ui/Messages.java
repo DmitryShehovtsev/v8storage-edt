@@ -36,6 +36,8 @@ public class Messages
     public static String ScriptRunnerJob_ErrorDuringExecution;
     public static String ScriptRunnerJob_Pull;
     public static String ScriptRunnerJob_Push;
+    public static String ScriptRunnerJob_NeedsRepeated;
+    public static String ScriptRunnerJob_UnexpectedValue;
 
     public static String Application_Error;
 

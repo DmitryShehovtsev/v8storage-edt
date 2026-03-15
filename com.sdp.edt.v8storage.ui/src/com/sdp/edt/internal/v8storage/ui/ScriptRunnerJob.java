@@ -7,13 +7,13 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.core.internal.jobs.JobManager;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -77,7 +77,7 @@ public class ScriptRunnerJob
     @Override
     protected IStatus run(IProgressMonitor monitor)
     {
-        monitor.beginTask("", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+        monitor.beginTask(null, IProgressMonitor.UNKNOWN);
 
         IStatus status = null;
 
@@ -93,9 +93,9 @@ public class ScriptRunnerJob
                ApplicationException applicationError = (ApplicationException)cause;
                ApplicationException eApp = (ApplicationException)cause;
                status = applicationError.getStatus();
-               if (status.matches(status.CANCEL))
+               if (status.matches(IStatus.CANCEL))
                {
-                   logError("Задание отменено пользователем", eApp);
+                   logError(Messages.ScriptRunnerJob_UserCancel, eApp);
                }
                else
                {
@@ -113,16 +113,16 @@ public class ScriptRunnerJob
 
     private IStatus runWithSubMonitor(IProgressMonitor monitor) throws InvocationTargetException
     {
-        return ProgressMonitors.computeWithSubMonitor("", IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
+        return ProgressMonitors.computeWithSubMonitor(null, IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
 
-            IStatus status = null;
-            ApplicationUpdateState updateState = null;
             String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
             if (!PreferencesChecks.FileExistsUI(scriptPath))
             {
-                String errorMsg = PreferencesChecks.messageInvalidPath();
-                return logError(errorMsg, null);
+                String msg = PreferencesChecks.messageInvalidPath();
+                return logError(msg, null);
             }
+
+            ApplicationUpdateState updateState = null;
             try
             {
                 updateState = applicationUpdate(project, subMonitor);
@@ -132,26 +132,25 @@ public class ScriptRunnerJob
                 throw new InvocationTargetException(e);
             }
 
+            IStatus status = null;
             switch (updateState)
             {
             case UPDATED:
                 {
                     IPath projectLocation = project.getLocation();
                     String cwd = projectLocation.toOSString();
-                    //status = scriptRun(scriptPath, cwd, subMonitor.split(IProgressMonitor.UNKNOWN));
+                    status = scriptRun(scriptPath, cwd, subMonitor);
                     break;
                 }
             case INCREMENTAL_UPDATE_REQUIRED:
                 {
-                    String message = "Требуется вручную завершить обновление и повторить операцию";
-                    Throwable t = new NullPointerException(message);
-                    status = new Status(IStatus.CANCEL, JobManager.PI_JOBS, JobManager.PLUGIN_ERROR, message, t);
-//                    this.setName(String.format("%s. %s", action.header(),
-//                        "Требуется вручную завершить обновление и повторить операцию"));
+                    Throwable t = new NullPointerException(Messages.ScriptRunnerJob_NeedsRepeated);
+                    status = new Status(IStatus.CANCEL, Activator.PLUGIN_ID, Messages.ScriptRunnerJob_NeedsRepeated, t);
                     break;
             }
             default:
-                throw new IllegalArgumentException("Unexpected value: " + updateState);
+                String msg = MessageFormat.format(Messages.ScriptRunnerJob_UnexpectedValue, updateState);
+                throw new IllegalArgumentException(msg);
             }
 
             return status;
@@ -195,7 +194,6 @@ public class ScriptRunnerJob
                 if (monitor.isCanceled())
                 {
                     process.destroy();
-                    monitor.subTask(Messages.ScriptRunnerJob_UserCancel);
                     return Status.CANCEL_STATUS;
                 }
                 Thread.sleep(100);
