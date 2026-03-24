@@ -22,6 +22,8 @@ public class PushAction
     public void run()
     {
         ICommitHandler callback = (hash, commitMessage) -> {
+            this.hash = hash;
+            this.commitMessage = commitMessage;
             ScriptRunnerJob job = new ScriptRunnerJob(this, project, shell);
             job.schedule();
         };
