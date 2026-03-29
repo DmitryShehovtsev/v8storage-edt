@@ -29,6 +29,10 @@ public class Messages
     public static String PushDialog_checkMessage;
     public static String PushDialog_Description;
 
+    public static String PushAction_Updated;
+    public static String PushAction_NeedsRepeated;
+    public static String PushAction_UnexpectedValue;
+
     public static String ScriptRunnerJob_ErrorReading;
     public static String ScriptRunnerJob_UserCancel;
     public static String ScriptRunnerJob_ErrorCode;
@@ -36,8 +40,6 @@ public class Messages
     public static String ScriptRunnerJob_ErrorDuringExecution;
     public static String ScriptRunnerJob_Pull;
     public static String ScriptRunnerJob_Push;
-    public static String ScriptRunnerJob_NeedsRepeated;
-    public static String ScriptRunnerJob_UnexpectedValue;
 
     public static String Application_Error;
 

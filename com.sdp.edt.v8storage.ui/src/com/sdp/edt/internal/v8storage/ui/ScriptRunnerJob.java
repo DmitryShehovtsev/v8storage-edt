@@ -7,12 +7,9 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
@@ -20,7 +17,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleManager;
@@ -29,14 +25,7 @@ import org.eclipse.ui.console.MessageConsoleStream;
 import org.eclipse.ui.progress.IProgressConstants;
 
 import com._1c.g5.v8.dt.common.runtime.ProgressMonitors;
-import com._1c.g5.wiring.ServiceAccess;
-import com._1c.g5.wiring.ServiceSupplier;
 import com.e1c.g5.dt.applications.ApplicationException;
-import com.e1c.g5.dt.applications.ApplicationUpdateState;
-import com.e1c.g5.dt.applications.ApplicationUpdateType;
-import com.e1c.g5.dt.applications.ExecutionContext;
-import com.e1c.g5.dt.applications.IApplication;
-import com.e1c.g5.dt.applications.IApplicationManager;
 import com.sdp.edt.internal.v8storage.Activator;
 import com.sdp.edt.internal.v8storage.preferences.PreferencesChecks;
 
@@ -48,28 +37,13 @@ public class ScriptRunnerJob
 
     private final IActions action;
     private final IProject project;
-    private final Shell shell;
 
-    private ServiceSupplier<IApplicationManager> applicationManager =
-        ServiceAccess.supplier(IApplicationManager.class, Activator.getDefault());
-
-    public void dispose()
-    {
-        applicationManager.close();
-    }
-
-    private IApplicationManager getApplicationManager()
-    {
-        return applicationManager.get();
-    }
-
-    public ScriptRunnerJob(IActions action, IProject project, Shell shell)
+    public ScriptRunnerJob(IActions action, IProject project)
     {
         super(action.header());
 
         this.action = action;
         this.project = project;
-        this.shell = shell;
         this.setUser(true);
         this.setProperty(IProgressConstants.KEEP_PROPERTY, Boolean.TRUE);
     }
@@ -122,52 +96,18 @@ public class ScriptRunnerJob
                 return logError(msg, null);
             }
 
-            ApplicationUpdateState updateState = null;
-            try
-            {
-                updateState = applicationUpdate(project, subMonitor);
-            }
-            catch (ApplicationException e)
-            {
-                throw new InvocationTargetException(e);
-            }
+            IStatus status = action.beforeRunJob(subMonitor);
 
-            IStatus status = null;
-            switch (updateState)
+            if (status.isOK())
             {
-            case UPDATED:
-                {
-                    IPath projectLocation = project.getLocation();
-                    String cwd = projectLocation.toOSString();
-                    status = scriptRun(scriptPath, cwd, subMonitor);
-                    break;
-                }
-            case INCREMENTAL_UPDATE_REQUIRED:
-                {
-                    Throwable t = new NullPointerException(Messages.ScriptRunnerJob_NeedsRepeated);
-                    status = new Status(IStatus.CANCEL, Activator.PLUGIN_ID, Messages.ScriptRunnerJob_NeedsRepeated, t);
-                    break;
-            }
-            default:
-                String msg = MessageFormat.format(Messages.ScriptRunnerJob_UnexpectedValue, updateState);
-                throw new IllegalArgumentException(msg);
+                IPath projectLocation = project.getLocation();
+                String cwd = projectLocation.toOSString();
+                status = scriptRun(scriptPath, cwd, subMonitor);
             }
 
             return status;
 
         });
-    }
-
-    private ApplicationUpdateState applicationUpdate(IProject project, IProgressMonitor monitor)
-        throws InvocationTargetException
-    {
-        IApplicationManager applicationManager = getApplicationManager();
-        Optional<IApplication> application = applicationManager.getDefaultApplication(project);
-        ExecutionContext context = new ExecutionContext(Map.of("activeShell", shell)); //$NON-NLS-1$
-        applicationManager.prepare(application.get(), "debug", context, monitor); //$NON-NLS-1$
-        ApplicationUpdateState updateState =
-            applicationManager.update(application.get(), ApplicationUpdateType.INCREMENTAL, context, monitor);
-        return updateState;
     }
 
     private IStatus scriptRun(String scriptPath, String cwd, IProgressMonitor monitor)
