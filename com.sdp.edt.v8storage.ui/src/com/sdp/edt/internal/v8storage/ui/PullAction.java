@@ -10,19 +10,13 @@ import org.eclipse.core.runtime.Status;
 import com.sdp.edt.internal.v8storage.Activator;
 
 public class PullAction
-    implements IActions
+    extends AbstractActions
 {
-    private IProject project;
-
-    public PullAction(IProject project)
-    {
-        this.project = project;
-    }
 
     @Override
     public void run()
     {
-        ScriptRunnerJob job = new ScriptRunnerJob(this, project);
+        ScriptRunnerJob job = new ScriptRunnerJob(this);
         job.schedule();
     }
 
@@ -45,7 +39,7 @@ public class PullAction
     }
 
     @Override
-    public IStatus beforeRunJob(IProgressMonitor subMonitor) throws InvocationTargetException
+    public IStatus beforeRunJob(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
     {
         IStatus status = new Status(IStatus.OK, Activator.PLUGIN_ID, "", null); //$NON-NLS-1$
         return status;

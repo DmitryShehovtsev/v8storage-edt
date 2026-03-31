@@ -40,4 +40,5 @@ public class Activator extends AbstractUIPlugin {
     {
         return store;
     }
+
 }

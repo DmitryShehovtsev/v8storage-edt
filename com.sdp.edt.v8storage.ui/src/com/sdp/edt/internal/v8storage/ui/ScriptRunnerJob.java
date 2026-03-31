@@ -35,15 +35,13 @@ public class ScriptRunnerJob
 
     private static final String CONSOLE_NAME = "V8 Storage Output"; //$NON-NLS-1$
 
-    private final IActions action;
-    private final IProject project;
+    private final AbstractActions action;
 
-    public ScriptRunnerJob(IActions action, IProject project)
+    public ScriptRunnerJob(AbstractActions action)
     {
         super(action.header());
 
         this.action = action;
-        this.project = project;
         this.setUser(true);
         this.setProperty(IProgressConstants.KEEP_PROPERTY, Boolean.TRUE);
     }
@@ -96,13 +94,21 @@ public class ScriptRunnerJob
                 return logError(msg, null);
             }
 
-            IStatus status = action.beforeRunJob(subMonitor);
+            IProject[] projects = action.projects();
 
-            if (status.isOK())
+            IStatus status = null;
+            if (projects.length == 0)
+                status = new Status(IStatus.CANCEL, Activator.PLUGIN_ID, Messages.Error_NoActiveProject, null);
+
+            for (IProject project : projects)
             {
-                IPath projectLocation = project.getLocation();
-                String cwd = projectLocation.toOSString();
-                status = scriptRun(scriptPath, cwd, subMonitor);
+                status = action.beforeRunJob(project, subMonitor);
+                if (status.isOK())
+                {
+                    IPath projectLocation = project.getLocation();
+                    String cwd = projectLocation.toOSString();
+                    status = scriptRun(scriptPath, cwd, subMonitor);
+                }
             }
 
             return status;

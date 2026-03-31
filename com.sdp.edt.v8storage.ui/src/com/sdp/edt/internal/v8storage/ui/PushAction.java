@@ -2,8 +2,6 @@ package com.sdp.edt.internal.v8storage.ui;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
-import java.util.Map;
-import java.util.Optional;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -12,41 +10,27 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import com._1c.g5.wiring.ServiceAccess;
-import com._1c.g5.wiring.ServiceSupplier;
+import com._1c.g5.v8.dt.platform.services.core.infobases.export.ExportConfigurationFileException;
+import com._1c.g5.v8.dt.platform.services.ui.PlatformServicesUiPlugin;
 import com.e1c.g5.dt.applications.ApplicationException;
 import com.e1c.g5.dt.applications.ApplicationUpdateState;
-import com.e1c.g5.dt.applications.ApplicationUpdateType;
-import com.e1c.g5.dt.applications.ExecutionContext;
-import com.e1c.g5.dt.applications.IApplication;
-import com.e1c.g5.dt.applications.IApplicationManager;
 import com.sdp.edt.internal.v8storage.Activator;
 
 public class PushAction
-    implements IActions
+    extends AbstractActions
 {
+
     private String hash;
     private String commitMessage;
-    private IProject project;
     private Shell shell;
+    private CommonUtils commonUtils;
+    private GitActions gitActions;
 
-    private ServiceSupplier<IApplicationManager> applicationManager =
-        ServiceAccess.supplier(IApplicationManager.class, Activator.getDefault());
-
-    public PushAction(IProject project, Shell shell)
+    public PushAction(Shell shell)
     {
-        this.project = project;
         this.shell = shell;
-    }
-
-    public void dispose()
-    {
-        applicationManager.close();
-    }
-
-    private IApplicationManager getApplicationManager()
-    {
-        return applicationManager.get();
+        this.commonUtils = new CommonUtils();
+        this.gitActions = new GitActions(repo);
     }
 
     @Override
@@ -55,12 +39,12 @@ public class PushAction
         ICommitHandler callback = (hash, commitMessage) -> {
             this.hash = hash;
             this.commitMessage = commitMessage;
-            ScriptRunnerJob job = new ScriptRunnerJob(this, project);
+            ScriptRunnerJob job = new ScriptRunnerJob(this);
             job.schedule();
         };
 
         Shell parentShell = Display.getCurrent().getActiveShell();
-        PushDialog.show(parentShell, callback);
+        PushDialog.show(repo, parentShell, callback);
     }
 
     @Override
@@ -82,13 +66,23 @@ public class PushAction
     }
 
     @Override
-    public IStatus beforeRunJob(IProgressMonitor subMonitor) throws InvocationTargetException
+    public IStatus beforeRunJob(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
+    {
+        IStatus status = doUpdate(project, subMonitor);
+        if (status.isOK())
+        {
+            status = doConfigDump(project, subMonitor);
+        }
+        return status;
+    }
+
+    private IStatus doUpdate(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
     {
         ApplicationUpdateState updateState = null;
 
         try
         {
-            updateState = applicationUpdate(project, subMonitor);
+            updateState = commonUtils.applicationUpdate(project, subMonitor, shell);
         }
         catch (ApplicationException e)
         {
@@ -118,15 +112,19 @@ public class PushAction
         return status;
     }
 
-    private ApplicationUpdateState applicationUpdate(IProject project, IProgressMonitor monitor)
-        throws InvocationTargetException
+    private IStatus doConfigDump(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
     {
-        IApplicationManager applicationManager = getApplicationManager();
-        Optional<IApplication> application = applicationManager.getDefaultApplication(project);
-        ExecutionContext context = new ExecutionContext(Map.of("activeShell", shell)); //$NON-NLS-1$
-        applicationManager.prepare(application.get(), "debug", context, monitor); //$NON-NLS-1$
-        ApplicationUpdateState updateState =
-            applicationManager.update(application.get(), ApplicationUpdateType.INCREMENTAL, context, monitor);
-        return updateState;
+        IStatus status = null;
+        String dumpName = gitActions.getHeadHash();
+        try
+        {
+            commonUtils.applicationConfigDump(project, dumpName, subMonitor);
+        }
+        catch (final InvocationTargetException | ExportConfigurationFileException e)
+        {
+            PlatformServicesUiPlugin.log(e);
+        }
+        return status;
     }
+
 }

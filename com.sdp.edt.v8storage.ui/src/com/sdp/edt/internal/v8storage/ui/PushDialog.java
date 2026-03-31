@@ -1,9 +1,9 @@
 package com.sdp.edt.internal.v8storage.ui;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -25,17 +25,18 @@ public class PushDialog
     private Text hashCommitText;
     private Text messageCommitText;
     private Text commitInfoText;
-    private IProject project;
     private ICommitHandler handler;
+    private GitActions gitActions;
 
-    private PushDialog(Shell parentShell, ICommitHandler handler)
+    private PushDialog(Repository repo, Shell parentShell, ICommitHandler handler)
     {
         super(parentShell);
+
+        this.gitActions = new GitActions(repo);
         this.handler = handler;
-        this.project = CommonUI.getActiveProject();
     }
 
-    public static void show(Shell parentShell, ICommitHandler handler)
+    public static void show(Repository repo, Shell parentShell, ICommitHandler handler)
     {
         if (instance != null && instance.getShell() != null && !instance.getShell().isDisposed())
         {
@@ -45,7 +46,7 @@ public class PushDialog
         }
         else
         {
-            instance = new PushDialog(parentShell, handler);
+            instance = new PushDialog(repo, parentShell, handler);
             instance.open();
             instance.getShell().addDisposeListener(e -> instance = null);
         }
@@ -53,9 +54,8 @@ public class PushDialog
 
     private void updateContent()
     {
-        project = CommonUI.getActiveProject();
-        commitInfoText.setText(GitActions.getCommitContextInfo(project));
-        hashCommitText.setText(GitActions.getParentHash(project));
+        commitInfoText.setText(gitActions.getCommitContextInfo());
+        hashCommitText.setText(gitActions.getParentHash());
         messageCommitText.setText(""); //$NON-NLS-1$
         messageCommitText.setFocus();
     }
@@ -101,7 +101,7 @@ public class PushDialog
         addSpacer(container);
 
         commitInfoText = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-        commitInfoText.setText(GitActions.getCommitContextInfo(project));
+        commitInfoText.setText(gitActions.getCommitContextInfo());
         commitInfoText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
         addSpacer(container);
@@ -111,7 +111,7 @@ public class PushDialog
         hashLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
         hashCommitText = new Text(container, SWT.BORDER | SWT.SINGLE);
-        hashCommitText.setText(GitActions.getParentHash(project));
+        hashCommitText.setText(gitActions.getParentHash());
         hashCommitText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         hashCommitText.addKeyListener(new KeyAdapter()
         {

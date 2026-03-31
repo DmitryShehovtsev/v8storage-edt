@@ -2,40 +2,37 @@ package com.sdp.edt.internal.v8storage.ui;
 
 import java.io.IOException;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 
-import com._1c.g5.v8.dt.common.git.GitUtils;
-
 public class GitActions
 {
+    private Repository repository;
 
-    public static String getCommitContextInfo(IProject project)
+    public GitActions(Repository repository)
+    {
+        this.repository = repository;
+    }
+
+    public String getCommitContextInfo()
     {
         try
         {
-            if (project == null)
-            {
-                return Messages.Error_NoActiveProject;
-            }
-
-            Repository repository = GitUtils.getGitRepository(project);
             if (repository == null)
             {
                 return Messages.Error_NotGitRepository;
             }
 
-            RevCommit headCommit = getHeadCommit(repository);
+            RevCommit headCommit = getHeadCommit();
             if (headCommit == null)
             {
                 return Messages.Error_NoHeadCommit;
             }
 
             String headInfo = String.format("HEAD commit %s", headCommit.getId().getName()); //$NON-NLS-1$
-            String parentInfo = getParentCommitInfo(headCommit, repository);
+            String parentInfo = getParentCommitInfo(headCommit);
 
             return String.format("%s\n%s", headInfo, parentInfo); //$NON-NLS-1$
         }
@@ -45,11 +42,10 @@ public class GitActions
         }
     }
 
-    public static String getHeadHash(IProject project)
+    public String getHeadHash()
     {
         try
         {
-            Repository repository = GitUtils.getGitRepository(project);
             ObjectId headId = repository.resolve("HEAD"); //$NON-NLS-1$
             return headId.getName();
         }
@@ -59,12 +55,11 @@ public class GitActions
         }
     }
 
-    public static String getParentHash(IProject project)
+    public String getParentHash()
     {
         try
         {
-            Repository repository = GitUtils.getGitRepository(project);
-            RevCommit headCommit = getHeadCommit(repository);
+            RevCommit headCommit = getHeadCommit();
             return getParentCommitIdMergedBranch(headCommit).getName();
         }
         catch (Exception e)
@@ -73,7 +68,7 @@ public class GitActions
         }
     }
 
-    private static RevCommit getHeadCommit(Repository repository) throws IOException
+    private RevCommit getHeadCommit() throws IOException
     {
         try (RevWalk revWalk = new RevWalk(repository))
         {
@@ -86,7 +81,7 @@ public class GitActions
         }
     }
 
-    private static String getParentCommitInfo(RevCommit headCommit, Repository repository) throws IOException
+    private String getParentCommitInfo(RevCommit headCommit) throws IOException
     {
         ObjectId parentId = getParentCommitIdMergedBranch(headCommit);
         try (RevWalk revWalk = new RevWalk(repository))
@@ -100,7 +95,7 @@ public class GitActions
         }
     }
 
-    private static ObjectId getParentCommitIdMergedBranch(RevCommit commit)
+    private ObjectId getParentCommitIdMergedBranch(RevCommit commit)
     {
         ObjectId commitId = null;
 
@@ -122,4 +117,5 @@ public class GitActions
 
         return commitId;
     }
+
 }
