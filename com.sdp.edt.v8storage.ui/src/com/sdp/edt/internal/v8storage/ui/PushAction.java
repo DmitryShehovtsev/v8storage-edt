@@ -2,8 +2,10 @@ package com.sdp.edt.internal.v8storage.ui;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
+import java.util.Optional;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -14,6 +16,7 @@ import com._1c.g5.v8.dt.platform.services.core.infobases.export.ExportConfigurat
 import com._1c.g5.v8.dt.platform.services.ui.PlatformServicesUiPlugin;
 import com.e1c.g5.dt.applications.ApplicationException;
 import com.e1c.g5.dt.applications.ApplicationUpdateState;
+import com.e1c.g5.dt.applications.IApplication;
 import com.sdp.edt.internal.v8storage.Activator;
 
 public class PushAction
@@ -68,21 +71,23 @@ public class PushAction
     @Override
     public IStatus beforeRunJob(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
     {
-        IStatus status = doUpdate(project, subMonitor);
+        Optional<IApplication> application = commonUtils.defaultApplication(project);
+        IStatus status = doUpdate(application, subMonitor);
         if (status.isOK())
         {
-            status = doConfigDump(project, subMonitor);
+            status = doConfigDump(application, project, subMonitor);
         }
         return status;
     }
 
-    private IStatus doUpdate(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
+    private IStatus doUpdate(Optional<IApplication> application, IProgressMonitor subMonitor)
+        throws InvocationTargetException
     {
         ApplicationUpdateState updateState = null;
 
         try
         {
-            updateState = commonUtils.applicationUpdate(project, subMonitor, shell);
+            updateState = commonUtils.applicationUpdate(application, subMonitor, shell);
         }
         catch (ApplicationException e)
         {
@@ -112,17 +117,22 @@ public class PushAction
         return status;
     }
 
-    private IStatus doConfigDump(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
+    private IStatus doConfigDump(Optional<IApplication> application, IProject project, IProgressMonitor subMonitor)
+        throws InvocationTargetException
     {
         IStatus status = null;
         String dumpName = gitActions.getHeadHash();
         try
         {
-            commonUtils.applicationConfigDump(project, dumpName, subMonitor);
+            commonUtils.applicationConfigDump(application, project, dumpName, subMonitor);
+            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpSuccess, project.getName());
+            status = new Status(IStatus.OK, Activator.PLUGIN_ID, msg, null);
         }
-        catch (final InvocationTargetException | ExportConfigurationFileException e)
+        catch (final InvocationTargetException | ExportConfigurationFileException | CoreException e)
         {
             PlatformServicesUiPlugin.log(e);
+            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpError, project.getName());
+            CommonUtils.logError(msg, e);
         }
         return status;
     }

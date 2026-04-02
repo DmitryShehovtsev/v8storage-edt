@@ -32,6 +32,8 @@ public class Messages
     public static String PushAction_Updated;
     public static String PushAction_NeedsRepeated;
     public static String PushAction_UnexpectedValue;
+    public static String PushAction_ConfigDumpSuccess;
+    public static String PushAction_ConfigDumpError;
 
     public static String ScriptRunnerJob_ErrorReading;
     public static String ScriptRunnerJob_UserCancel;
