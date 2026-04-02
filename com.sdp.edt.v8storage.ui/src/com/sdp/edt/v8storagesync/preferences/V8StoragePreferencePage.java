@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage.preferences;
+package com.sdp.edt.v8storagesync.preferences;
 
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.swt.SWT;
@@ -11,7 +11,7 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
-import com.sdp.edt.internal.v8storage.ui.Activator;
+import com.sdp.edt.v8storagesync.ui.Activator;
 
 public class V8StoragePreferencePage
     extends FieldEditorPreferencePage

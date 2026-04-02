@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage.ui;
+package com.sdp.edt.v8storagesync.ui;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,13 +26,13 @@ import org.eclipse.ui.progress.IProgressConstants;
 
 import com._1c.g5.v8.dt.common.runtime.ProgressMonitors;
 import com.e1c.g5.dt.applications.ApplicationException;
-import com.sdp.edt.internal.v8storage.preferences.PreferencesChecks;
+import com.sdp.edt.v8storagesync.preferences.PreferencesChecks;
 
 public class ScriptRunnerJob
     extends Job
 {
 
-    private static final String CONSOLE_NAME = "V8 Storage Output"; //$NON-NLS-1$
+    private static final String CONSOLE_NAME = "V8 Storage Sync Output"; //$NON-NLS-1$
 
     private final AbstractActions action;
 
@@ -107,6 +108,10 @@ public class ScriptRunnerJob
                     String cwd = projectLocation.toOSString();
                     status = scriptRun(scriptPath, cwd, subMonitor);
                 }
+                if (status.getCode() == IStatus.ERROR)
+                {
+                    return status;
+                }
             }
 
             return status;
@@ -148,7 +153,7 @@ public class ScriptRunnerJob
             int exitCode = process.exitValue();
             if (exitCode != 0)
             {
-                String errorMsg = String.format("%s %s", Messages.ScriptRunnerJob_ErrorCode, exitCode); //$NON-NLS-1$
+                String errorMsg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorCode, exitCode);
                 monitor.subTask(errorMsg);
                 return CommonUtils.statusError(errorMsg, null);
             }
@@ -160,7 +165,7 @@ public class ScriptRunnerJob
         }
         catch (IOException | InterruptedException e)
         {
-            String errorMsg = String.format("%s: %s", Messages.ScriptRunnerJob_ErrorDuringExecution, e.getMessage()); //$NON-NLS-1$
+            String errorMsg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorDuringExecution, e.getMessage());
             monitor.subTask(errorMsg);
             return CommonUtils.statusError(errorMsg, e);
         }
@@ -198,8 +203,8 @@ public class ScriptRunnerJob
             }
             catch (IOException e)
             {
-                CommonUtils.statusError(String.format("%s: %s", Messages.ScriptRunnerJob_ErrorReading, e.getMessage()), //$NON-NLS-1$
-                    e);
+                String msg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorReading, e.getMessage());
+                CommonUtils.statusError(msg, e);
 
             }
         });

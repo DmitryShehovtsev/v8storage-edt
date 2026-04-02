@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage.ui;
+package com.sdp.edt.v8storagesync.ui;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -16,8 +16,13 @@ import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import com._1c.g5.v8.dt.core.platform.IExtensionProject;
+import com._1c.g5.v8.dt.core.platform.IV8Project;
+import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
 import com._1c.g5.v8.dt.platform.services.core.infobases.export.ExportConfigurationFileException;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.RuntimeExecutionException;
+import com._1c.g5.wiring.ServiceAccess;
+import com._1c.g5.wiring.ServiceSupplier;
 import com.e1c.g5.dt.applications.ApplicationUpdateState;
 import com.e1c.g5.dt.applications.IApplication;
 
@@ -29,6 +34,9 @@ public class PushAction
     private Shell shell;
     private CommonUtils commonUtils;
     private GitActions gitActions;
+
+    private ServiceSupplier<IV8ProjectManager> v8projectManager =
+        ServiceAccess.supplier(IV8ProjectManager.class, Activator.getDefault());
 
     public PushAction(Shell shell)
     {
@@ -68,12 +76,27 @@ public class PushAction
         throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
         IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
-        Optional<IApplication> application = commonUtils.defaultApplication(project);
-        IStatus status = doUpdate(application, subMonitor);
-        if (status.isOK())
+        IStatus status = new Status(IStatus.OK, Activator.PLUGIN_ID, "", null); //$NON-NLS-1$
+
+        IV8ProjectManager v8projectManager = getv8projectManager();
+        IV8Project v8Project = v8projectManager.getProject(project);
+        if (v8Project instanceof IExtensionProject)
         {
-            status = doConfigDump(application, project, subMonitor);
+            return status;
         }
+
+        Optional<IApplication> application = commonUtils.defaultApplication(project);
+        if (application.isEmpty())
+        {
+            String msg = MessageFormat.format(Messages.PushAction_ApplicationNotFound, project.getName());
+            status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, null);
+            return status;
+        }
+
+        status = doUpdate(application, subMonitor);
+        if (status.isOK())
+            status = doConfigDump(application, project, subMonitor);
+
         return status;
     }
 
@@ -107,20 +130,35 @@ public class PushAction
         throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
         IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
+        String projectName = project.getName();
+        String msgDump = MessageFormat.format(Messages.PushAction_DumpingConf, projectName);
+        subMonitor.subTask(msgDump);
+
         IStatus status = null;
         String dumpName = gitActions.getHeadHash();
         try
         {
             commonUtils.applicationConfigDump(application, project, dumpName, subMonitor);
-            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpSuccess, project.getName());
+            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpSuccess, projectName);
             status = new Status(IStatus.OK, Activator.PLUGIN_ID, msg, null);
         }
         catch (final InvocationTargetException | ExportConfigurationFileException | CoreException e)
         {
-            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpError, project.getName());
+            String msg = MessageFormat.format(Messages.PushAction_ConfigDumpError, projectName);
             status = CommonUtils.statusError(msg, e);
         }
         return status;
+    }
+
+    @Override
+    public void dispose()
+    {
+        v8projectManager.close();
+    }
+
+    private IV8ProjectManager getv8projectManager()
+    {
+        return v8projectManager.get();
     }
 
 }

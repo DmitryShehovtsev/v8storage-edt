@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage.preferences;
+package com.sdp.edt.v8storagesync.preferences;
 
 import java.io.File;
 

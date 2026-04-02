@@ -1,5 +1,5 @@
 
-package com.sdp.edt.internal.v8storage.ui;
+package com.sdp.edt.v8storagesync.ui;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -28,6 +28,9 @@ public abstract class AbstractActions
 
     public AbstractActions() {
         repo = getSelectedRepository();
+        IProject[] projects = projects();
+        if (projects.length == 0)
+            repo = null;
         Preconditions.checkNotNull(repo);
     }
 
@@ -74,7 +77,7 @@ public abstract class AbstractActions
 
         IStructuredSelection selection = (IStructuredSelection)view.getSite().getSelectionProvider().getSelection();
         Preconditions.checkNotNull(selection);
-        Preconditions.checkArgument(selection.isEmpty());
+        Preconditions.checkArgument(!selection.isEmpty());
 
         Object firstElement = selection.getFirstElement();
         if (firstElement instanceof RepositoryTreeNode)
@@ -82,6 +85,7 @@ public abstract class AbstractActions
             RepositoryTreeNode<?> node = (RepositoryTreeNode<?>)firstElement;
             return node.getRepository();
         }
+
         return null;
     }
 

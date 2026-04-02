@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage.ui;
+package com.sdp.edt.v8storagesync.ui;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -8,7 +8,7 @@ import org.osgi.framework.BundleContext;
 
 public class Activator extends AbstractUIPlugin {
 
-    public static final String PLUGIN_ID = "com.sdp.edt.internal.v8storage.ui"; //$NON-NLS-1$
+    public static final String PLUGIN_ID = "com.sdp.edt.v8storagesync.ui"; //$NON-NLS-1$
     public static final String PREF_SCRIPT_PATH = "scriptPath"; //$NON-NLS-1$
     private static Activator plugin;
     private IPreferenceStore store;

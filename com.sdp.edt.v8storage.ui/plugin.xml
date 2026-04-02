@@ -3,18 +3,18 @@
 <plugin>
    <extension point="org.eclipse.ui.preferencePages">
       <page
-            class="com.sdp.edt.internal.v8storage.preferences.V8StoragePreferencePage"
-            id="com.sdp.edt.v8storage.ui.preferencePage"
+            class="com.sdp.edt.v8storagesync.preferences.V8StoragePreferencePage"
+            id="com.sdp.edt.v8storagesync.ui.preferencePage"
             name="%preferencePageName">
       </page>
     </extension>
    <extension point="org.eclipse.ui.commands">
       <command
-            id="com.sdp.edt.v8storage.ui.pullCommand"
+            id="com.sdp.edt.v8storagesync.ui.pullCommand"
             name="%pullCommandName">
       </command>
       <command
-            id="com.sdp.edt.v8storage.ui.pushCommand"
+            id="com.sdp.edt.v8storagesync.ui.pushCommand"
             name="%pushCommandName">
       </command>
    </extension>
@@ -22,14 +22,14 @@
       <menuContribution
             locationURI="toolbar:org.eclipse.team.ui.GenericHistoryView?after=additions">
          <command
-               commandId="com.sdp.edt.v8storage.ui.pullCommand"
+               commandId="com.sdp.edt.v8storagesync.ui.pullCommand"
                label="%pullCommandLabel"
                style="push"
                tooltip="%pullCommandTooltip"
                icon="icons/pull.png">
          </command>
          <command
-               commandId="com.sdp.edt.v8storage.ui.pushCommand"
+               commandId="com.sdp.edt.v8storagesync.ui.pushCommand"
                icon="icons/push.png"
                label="%pushCommandLabel"
                style="push"
@@ -39,12 +39,12 @@
    </extension>
    <extension point="org.eclipse.ui.handlers">
       <handler
-            commandId="com.sdp.edt.v8storage.ui.pullCommand"
-            class="com.sdp.edt.internal.v8storage.ui.PullActionHandler">
+            commandId="com.sdp.edt.v8storagesync.ui.pullCommand"
+            class="com.sdp.edt.v8storagesync.ui.PullActionHandler">
       </handler>
       <handler
-            class="com.sdp.edt.internal.v8storage.ui.PushActionHandler"
-            commandId="com.sdp.edt.v8storage.ui.pushCommand">
+            class="com.sdp.edt.v8storagesync.ui.PushActionHandler"
+            commandId="com.sdp.edt.v8storagesync.ui.pushCommand">
       </handler>
    </extension>
 </plugin>

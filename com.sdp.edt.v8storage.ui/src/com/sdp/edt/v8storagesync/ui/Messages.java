@@ -1,11 +1,11 @@
-package com.sdp.edt.internal.v8storage.ui;
+package com.sdp.edt.v8storagesync.ui;
 
 import org.eclipse.osgi.util.NLS;
 
 public class Messages
     extends NLS
 {
-    private static final String BUNDLE_NAME = "com.sdp.edt.internal.v8storage.ui.messages"; //$NON-NLS-1$
+    private static final String BUNDLE_NAME = "com.sdp.edt.v8storagesync.ui.messages"; //$NON-NLS-1$
 
     public static String Error_NoActiveProject;
     public static String Error_NoHeadCommit;
@@ -22,6 +22,8 @@ public class Messages
     public static String PushAction_UnexpectedValue;
     public static String PushAction_ConfigDumpSuccess;
     public static String PushAction_ConfigDumpError;
+    public static String PushAction_ApplicationNotFound;
+    public static String PushAction_DumpingConf;
 
     public static String ScriptRunnerJob_ErrorReading;
     public static String ScriptRunnerJob_UserCancel;
