@@ -1,5 +1,6 @@
 package com.sdp.edt.internal.v8storage.ui;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.Optional;
@@ -9,20 +10,20 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jgit.errors.AmbiguousObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 import com._1c.g5.v8.dt.platform.services.core.infobases.export.ExportConfigurationFileException;
-import com._1c.g5.v8.dt.platform.services.ui.PlatformServicesUiPlugin;
-import com.e1c.g5.dt.applications.ApplicationException;
+import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.RuntimeExecutionException;
 import com.e1c.g5.dt.applications.ApplicationUpdateState;
 import com.e1c.g5.dt.applications.IApplication;
-import com.sdp.edt.internal.v8storage.Activator;
 
 public class PushAction
     extends AbstractActions
 {
-
     private String hash;
     private String commitMessage;
     private Shell shell;
@@ -37,7 +38,7 @@ public class PushAction
     }
 
     @Override
-    public void run()
+    public void run() throws InvocationTargetException
     {
         ICommitHandler callback = (hash, commitMessage) -> {
             this.hash = hash;
@@ -53,7 +54,7 @@ public class PushAction
     @Override
     public String header()
     {
-        return Messages.ScriptRunnerJob_Push;
+        return Messages.ScriptRunnerJob_HeaderPush;
     }
 
     @Override
@@ -63,13 +64,9 @@ public class PushAction
     }
 
     @Override
-    public String scriptEngine()
-    {
-        return "oscript"; //$NON-NLS-1$
-    }
-
-    @Override
-    public IStatus beforeRunJob(IProject project, IProgressMonitor subMonitor) throws InvocationTargetException
+    public IStatus beforeRunJob(IProject project, IProgressMonitor subMonitor)
+        throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
+        IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
         Optional<IApplication> application = commonUtils.defaultApplication(project);
         IStatus status = doUpdate(application, subMonitor);
@@ -83,19 +80,8 @@ public class PushAction
     private IStatus doUpdate(Optional<IApplication> application, IProgressMonitor subMonitor)
         throws InvocationTargetException
     {
-        ApplicationUpdateState updateState = null;
-
-        try
-        {
-            updateState = commonUtils.applicationUpdate(application, subMonitor, shell);
-        }
-        catch (ApplicationException e)
-        {
-            throw new InvocationTargetException(e);
-        }
-
         IStatus status = null;
-
+        ApplicationUpdateState updateState = commonUtils.applicationUpdate(application, subMonitor, shell);
         switch (updateState)
         {
         case UPDATED:
@@ -111,14 +97,15 @@ public class PushAction
             }
         default:
             String msg = MessageFormat.format(Messages.PushAction_UnexpectedValue, updateState);
-            throw new IllegalArgumentException(msg);
+            status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, null);
         }
 
         return status;
     }
 
     private IStatus doConfigDump(Optional<IApplication> application, IProject project, IProgressMonitor subMonitor)
-        throws InvocationTargetException
+        throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
+        IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
         IStatus status = null;
         String dumpName = gitActions.getHeadHash();
@@ -130,9 +117,8 @@ public class PushAction
         }
         catch (final InvocationTargetException | ExportConfigurationFileException | CoreException e)
         {
-            PlatformServicesUiPlugin.log(e);
             String msg = MessageFormat.format(Messages.PushAction_ConfigDumpError, project.getName());
-            CommonUtils.logError(msg, e);
+            status = CommonUtils.statusError(msg, e);
         }
         return status;
     }

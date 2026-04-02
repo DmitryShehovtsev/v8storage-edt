@@ -17,11 +17,9 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Shell;
 
 import com._1c.g5.v8.dt.platform.services.core.infobases.InfobaseAccessType;
-import com._1c.g5.v8.dt.platform.services.core.infobases.export.ExportConfigurationFileException;
 import com._1c.g5.v8.dt.platform.services.core.infobases.export.IExportConfigurationFileService;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.environments.IResolvableRuntimeInstallation;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.environments.IResolvableRuntimeInstallationManager;
-import com._1c.g5.v8.dt.platform.services.core.runtimes.environments.MatchingRuntimeNotFound;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.ComponentExecutorInfo;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.ILaunchableRuntimeComponent;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.IRuntimeComponentManager;
@@ -36,7 +34,6 @@ import com.e1c.g5.dt.applications.ApplicationUpdateType;
 import com.e1c.g5.dt.applications.ExecutionContext;
 import com.e1c.g5.dt.applications.IApplication;
 import com.e1c.g5.dt.applications.IApplicationManager;
-import com.sdp.edt.internal.v8storage.Activator;
 
 public class CommonUtils
 {
@@ -53,23 +50,30 @@ public class CommonUtils
     private ServiceSupplier<IRuntimeComponentManager> componentManager =
         ServiceAccess.supplier(IRuntimeComponentManager.class, Activator.getDefault());
 
+    public static IStatus statusError(String message, Throwable e)
+    {
+        IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, message, e);
+        Activator.getDefault().getLog().log(status);
+        return status;
+    }
+
     public ApplicationUpdateState applicationUpdate(Optional<IApplication> application, IProgressMonitor monitor,
         Shell shell)
         throws InvocationTargetException
     {
         IApplicationManager applicationManager = getApplicationManager();
         ExecutionContext context = new ExecutionContext(Map.of("activeShell", shell)); //$NON-NLS-1$
-        applicationManager.prepare(application.get(), "debug", context, monitor); //$NON-NLS-1$
+        IApplication app = application.get();
+        applicationManager.prepare(app, "debug", context, monitor); //$NON-NLS-1$
         ApplicationUpdateState updateState =
-            applicationManager.update(application.get(), ApplicationUpdateType.INCREMENTAL,
-                context, monitor);
-        applicationManager.cleanup(application.get(), context, monitor);
+            applicationManager.update(app, ApplicationUpdateType.INCREMENTAL, context, monitor);
+        applicationManager.cleanup(app, context, monitor);
         return updateState;
     }
 
     public void applicationConfigDump(Optional<IApplication> application, IProject project, String fileName,
         IProgressMonitor monitor)
-        throws InvocationTargetException, CoreException
+        throws InvocationTargetException, CoreException, RuntimeExecutionException
     {
         IResolvableRuntimeInstallationManager resolvableRuntimeInstallationManager =
             getResolvableRuntimeInstallationManager();
@@ -79,49 +83,27 @@ public class CommonUtils
         InfobaseReference infobase = Adapters.adapt(application.get(), InfobaseReference.class);
 
         IResolvableRuntimeInstallation resolvable;
-        try
-        {
-            resolvable = resolvableRuntimeInstallationManager.resolveByProjectAndInfobase(
-                    "com._1c.g5.v8.dt.platform.services.core.runtimeType.EnterprisePlatform", project, infobase, //$NON-NLS-1$
-                    InfobaseAccessType.UPDATE);
-        }
-        catch (MatchingRuntimeNotFound e)
-        {
-            throw new InvocationTargetException(e);
-        }
+        resolvable = resolvableRuntimeInstallationManager.resolveByProjectAndInfobase(
+            "com._1c.g5.v8.dt.platform.services.core.runtimeType.EnterprisePlatform", project, infobase, //$NON-NLS-1$
+            InfobaseAccessType.UPDATE);
 
         RuntimeInstallation resolved = resolvable.resolve(
             List.of("com._1c.g5.v8.dt.platform.services.core.componentTypes.ThickClient"), infobase.getAppArch()); //$NON-NLS-1$
 
         ComponentExecutorInfo<ILaunchableRuntimeComponent, IThickClientLauncher> executor;
-        try
-        {
-            executor =
-                componentManager.resolveExecutor(ILaunchableRuntimeComponent.class, IThickClientLauncher.class,
-                    resolved, "com._1c.g5.v8.dt.platform.services.core.componentTypes.ThickClient"); //$NON-NLS-1$
-        }
-        catch (RuntimeExecutionException e)
-        {
-            throw new InvocationTargetException(e);
-        }
+        executor = componentManager.resolveExecutor(ILaunchableRuntimeComponent.class, IThickClientLauncher.class,
+            resolved, "com._1c.g5.v8.dt.platform.services.core.componentTypes.ThickClient"); //$NON-NLS-1$
 
-        try
-        {
-            IPath projectLocation = project.getLocation();
-            fileName = (fileName == "") ? "1cv8" : fileName; //$NON-NLS-1$ //$NON-NLS-2$
-            Path destination = Path.of(projectLocation.toOSString(), fileName + ".cf"); //$NON-NLS-1$
+        IPath projectLocation = project.getLocation();
+        fileName = (fileName == "") ? "1cv8" : fileName; //$NON-NLS-1$ //$NON-NLS-2$
+        Path destination = Path.of(projectLocation.toOSString(), fileName + ".cf"); //$NON-NLS-1$
 
-            IProjectDescription projectDescription = project.getDescription();
-            String[] parts = projectDescription.getName().split("\\."); //$NON-NLS-1$
-            String extensionName = (parts.length > 1) ? parts[1] : null;
+        IProjectDescription projectDescription = project.getDescription();
+        String[] parts = projectDescription.getName().split("\\."); //$NON-NLS-1$
+        String extensionName = (parts.length > 1) ? parts[1] : null;
 
-            exportConfigurationFileService.exportConfigurationOrExtension(infobase,
-                executor.getComponent(), executor.getExecutor(), extensionName, destination, monitor);
-        }
-        catch (ExportConfigurationFileException e)
-        {
-            throw new InvocationTargetException(e);
-        }
+        exportConfigurationFileService.exportConfigurationOrExtension(infobase, executor.getComponent(),
+            executor.getExecutor(), extensionName, destination, monitor);
     }
 
     public Optional<IApplication> defaultApplication(IProject project)
@@ -129,13 +111,6 @@ public class CommonUtils
         IApplicationManager applicationManager = getApplicationManager();
         Optional<IApplication> application = applicationManager.getDefaultApplication(project);
         return application;
-    }
-
-    public static IStatus logError(String message, Throwable e)
-    {
-        IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, message, e);
-        Activator.getDefault().getLog().log(status);
-        return status;
     }
 
     public void dispose()

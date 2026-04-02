@@ -1,5 +1,7 @@
 package com.sdp.edt.internal.v8storage.ui;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -7,6 +9,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
+
+import com._1c.g5.v8.dt.platform.services.ui.PlatformServicesUiPlugin;
 
 public class PushActionHandler
     extends AbstractHandler
@@ -22,7 +26,14 @@ public class PushActionHandler
         }
 
         PushAction action = new PushAction(shell);
-        action.run();
+        try
+        {
+            action.run();
+        }
+        catch (InvocationTargetException e)
+        {
+            PlatformServicesUiPlugin.log(e);
+        }
 
         return null;
 

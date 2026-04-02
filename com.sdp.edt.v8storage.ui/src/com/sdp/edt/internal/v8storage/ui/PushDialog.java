@@ -1,5 +1,7 @@
 package com.sdp.edt.internal.v8storage.ui;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -16,6 +18,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+
+import com._1c.g5.v8.dt.platform.services.ui.PlatformServicesUiPlugin;
 
 public class PushDialog
     extends Dialog
@@ -36,7 +40,7 @@ public class PushDialog
         this.handler = handler;
     }
 
-    public static void show(Repository repo, Shell parentShell, ICommitHandler handler)
+    public static void show(Repository repo, Shell parentShell, ICommitHandler handler) throws InvocationTargetException
     {
         if (instance != null && instance.getShell() != null && !instance.getShell().isDisposed())
         {
@@ -52,7 +56,7 @@ public class PushDialog
         }
     }
 
-    private void updateContent()
+    private void updateContent() throws InvocationTargetException
     {
         commitInfoText.setText(gitActions.getCommitContextInfo());
         hashCommitText.setText(gitActions.getParentHash());
@@ -101,8 +105,15 @@ public class PushDialog
         addSpacer(container);
 
         commitInfoText = new Text(container, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-        commitInfoText.setText(gitActions.getCommitContextInfo());
         commitInfoText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+        try
+        {
+            commitInfoText.setText(gitActions.getCommitContextInfo());
+        }
+        catch (InvocationTargetException e)
+        {
+            PlatformServicesUiPlugin.log(e);
+        }
 
         addSpacer(container);
 
@@ -111,7 +122,6 @@ public class PushDialog
         hashLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
 
         hashCommitText = new Text(container, SWT.BORDER | SWT.SINGLE);
-        hashCommitText.setText(gitActions.getParentHash());
         hashCommitText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         hashCommitText.addKeyListener(new KeyAdapter()
         {
@@ -124,6 +134,14 @@ public class PushDialog
                 }
             }
         });
+        try
+        {
+            hashCommitText.setText(gitActions.getParentHash());
+        }
+        catch (InvocationTargetException e)
+        {
+            PlatformServicesUiPlugin.log(e);
+        }
 
         Label messageLabel = new Label(container, SWT.NONE);
         messageLabel.setText(Messages.PushDialog_messageLabel);

@@ -21,7 +21,7 @@ Import-Package: com._1c.g5.v8.dt.common.runtime;version="2.0.0",
  org.eclipse.egit.ui.internal.repository.tree;version="6.8.11",
  org.eclipse.team.internal.ui,
  org.eclipse.team.ui.history
-Bundle-Activator: com.sdp.edt.internal.v8storage.Activator
+Bundle-Activator: com.sdp.edt.internal.v8storage.ui.Activator
 Bundle-Vendor: SDP
 Bundle-Description: Integration plugin for V8 Storage synchronization with Git in 1C:EDT.
 Bundle-License: Eclipse Public License 2.0;https://www.eclipse.org/legal/epl-2.0/

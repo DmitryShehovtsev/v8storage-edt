@@ -1,7 +1,11 @@
 package com.sdp.edt.internal.v8storage.ui;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
+import org.eclipse.jgit.errors.AmbiguousObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -16,59 +20,34 @@ public class GitActions
         this.repository = repository;
     }
 
-    public String getCommitContextInfo()
+    public String getCommitContextInfo() throws InvocationTargetException
     {
-        try
+        RevCommit headCommit = getHeadCommit();
+        if (headCommit == null)
         {
-            if (repository == null)
-            {
-                return Messages.Error_NotGitRepository;
-            }
-
-            RevCommit headCommit = getHeadCommit();
-            if (headCommit == null)
-            {
-                return Messages.Error_NoHeadCommit;
-            }
-
-            String headInfo = String.format("HEAD commit %s", headCommit.getId().getName()); //$NON-NLS-1$
-            String parentInfo = getParentCommitInfo(headCommit);
-
-            return String.format("%s\n%s", headInfo, parentInfo); //$NON-NLS-1$
+            return Messages.Error_NoHeadCommit;
         }
-        catch (Exception e)
-        {
-            return String.format("%s: %s", Messages.Error_Exception, e.getMessage()); //$NON-NLS-1$
-        }
+
+        String headInfo = String.format("HEAD commit %s", headCommit.getId().getName()); //$NON-NLS-1$
+        String parentInfo = getParentCommitInfo(headCommit);
+
+        return String.format("%s\n%s", headInfo, parentInfo); //$NON-NLS-1$
     }
 
-    public String getHeadHash()
+    public String getHeadHash() throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
+        IncorrectObjectTypeException, IOException
     {
-        try
-        {
-            ObjectId headId = repository.resolve("HEAD"); //$NON-NLS-1$
-            return headId.getName();
-        }
-        catch (Exception e)
-        {
-            return ""; //$NON-NLS-1$
-        }
+        ObjectId headId = repository.resolve("HEAD"); //$NON-NLS-1$
+        return headId.getName();
     }
 
-    public String getParentHash()
+    public String getParentHash() throws InvocationTargetException
     {
-        try
-        {
-            RevCommit headCommit = getHeadCommit();
-            return getParentCommitIdMergedBranch(headCommit).getName();
-        }
-        catch (Exception e)
-        {
-            return ""; //$NON-NLS-1$
-        }
+        RevCommit headCommit = getHeadCommit();
+        return getParentCommitIdMergedBranch(headCommit).getName();
     }
 
-    private RevCommit getHeadCommit() throws IOException
+    private RevCommit getHeadCommit() throws InvocationTargetException
     {
         try (RevWalk revWalk = new RevWalk(repository))
         {
@@ -77,11 +56,11 @@ public class GitActions
         }
         catch (Exception e)
         {
-            return null;
+            throw new InvocationTargetException(e);
         }
     }
 
-    private String getParentCommitInfo(RevCommit headCommit) throws IOException
+    private String getParentCommitInfo(RevCommit headCommit) throws InvocationTargetException
     {
         ObjectId parentId = getParentCommitIdMergedBranch(headCommit);
         try (RevWalk revWalk = new RevWalk(repository))
@@ -91,7 +70,7 @@ public class GitActions
         }
         catch (Exception e)
         {
-            return Messages.Error_NoParentCommit;
+            throw new InvocationTargetException(e);
         }
     }
 

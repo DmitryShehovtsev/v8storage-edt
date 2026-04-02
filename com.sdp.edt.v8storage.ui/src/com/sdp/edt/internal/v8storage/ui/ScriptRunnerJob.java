@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -26,7 +25,6 @@ import org.eclipse.ui.progress.IProgressConstants;
 
 import com._1c.g5.v8.dt.common.runtime.ProgressMonitors;
 import com.e1c.g5.dt.applications.ApplicationException;
-import com.sdp.edt.internal.v8storage.Activator;
 import com.sdp.edt.internal.v8storage.preferences.PreferencesChecks;
 
 public class ScriptRunnerJob
@@ -57,7 +55,7 @@ public class ScriptRunnerJob
         {
             status = runWithSubMonitor(monitor);
         }
-        catch (InvocationTargetException e)
+        catch (Exception e)
         {
             Throwable cause = e.getCause() == null ? e : e.getCause();
             if (cause instanceof ApplicationException)
@@ -67,23 +65,23 @@ public class ScriptRunnerJob
                status = applicationError.getStatus();
                if (status.matches(IStatus.CANCEL))
                {
-                   logError(Messages.ScriptRunnerJob_UserCancel, eApp);
+                   status = CommonUtils.statusError(Messages.ScriptRunnerJob_UserCancel, eApp);
                }
                else
                {
-                   logError(Messages.Application_Error, eApp);
+                   status = CommonUtils.statusError(Messages.Application_Error, eApp);
                }
             }
             else
             {
-                logError(Messages.Application_Error, e);
+                status = CommonUtils.statusError(Messages.Application_Error, e);
             }
         }
 
         return status;
     }
 
-    private IStatus runWithSubMonitor(IProgressMonitor monitor) throws InvocationTargetException
+    private IStatus runWithSubMonitor(IProgressMonitor monitor) throws Exception
     {
         return ProgressMonitors.computeWithSubMonitor(null, IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
 
@@ -91,7 +89,7 @@ public class ScriptRunnerJob
             if (!PreferencesChecks.FileExistsUI(scriptPath))
             {
                 String msg = PreferencesChecks.messageInvalidPath();
-                return logError(msg, null);
+                return CommonUtils.statusError(msg, null);
             }
 
             IProject[] projects = action.projects();
@@ -152,7 +150,7 @@ public class ScriptRunnerJob
             {
                 String errorMsg = String.format("%s %s", Messages.ScriptRunnerJob_ErrorCode, exitCode); //$NON-NLS-1$
                 monitor.subTask(errorMsg);
-                return logError(errorMsg, null);
+                return CommonUtils.statusError(errorMsg, null);
             }
             else
             {
@@ -164,7 +162,7 @@ public class ScriptRunnerJob
         {
             String errorMsg = String.format("%s: %s", Messages.ScriptRunnerJob_ErrorDuringExecution, e.getMessage()); //$NON-NLS-1$
             monitor.subTask(errorMsg);
-            return logError(errorMsg, e);
+            return CommonUtils.statusError(errorMsg, e);
         }
         finally
         {
@@ -200,7 +198,9 @@ public class ScriptRunnerJob
             }
             catch (IOException e)
             {
-                logError(String.format("%s: %s", Messages.ScriptRunnerJob_ErrorReading, e.getMessage()), e); //$NON-NLS-1$
+                CommonUtils.statusError(String.format("%s: %s", Messages.ScriptRunnerJob_ErrorReading, e.getMessage()), //$NON-NLS-1$
+                    e);
+
             }
         });
 
@@ -221,12 +221,4 @@ public class ScriptRunnerJob
         consoleManager.addConsoles(new IConsole[] { newConsole });
         return newConsole;
     }
-
-    private IStatus logError(String message, Throwable e)
-    {
-        IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, message, e);
-        Activator.getDefault().getLog().log(status);
-        return status;
-    }
-
 }

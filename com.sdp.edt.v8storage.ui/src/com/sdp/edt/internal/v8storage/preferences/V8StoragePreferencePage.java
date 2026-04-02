@@ -11,7 +11,7 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
-import com.sdp.edt.internal.v8storage.Activator;
+import com.sdp.edt.internal.v8storage.ui.Activator;
 
 public class V8StoragePreferencePage
     extends FieldEditorPreferencePage

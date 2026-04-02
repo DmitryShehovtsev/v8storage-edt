@@ -1,4 +1,4 @@
-package com.sdp.edt.internal.v8storage;
+package com.sdp.edt.internal.v8storage.ui;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.IPreferenceStore;

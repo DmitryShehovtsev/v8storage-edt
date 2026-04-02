@@ -7,22 +7,10 @@ public class Messages
 {
     private static final String BUNDLE_NAME = "com.sdp.edt.internal.v8storage.ui.messages"; //$NON-NLS-1$
 
-    public static String pullCommandName;
-    public static String pullCommandLabel;
-    public static String pullCommandTooltip;
-
-    public static String pushCommandName;
-    public static String pushCommandLabel;
-    public static String pushCommandTooltip;
-
     public static String Error_NoActiveProject;
-    public static String Error_NotGitRepository;
     public static String Error_NoHeadCommit;
-    public static String Error_Exception;
-    public static String Error_NoParentCommit;
 
     public static String PushDialog_Header;
-    public static String PushDialog_Title;
     public static String PushDialog_hashLabel;
     public static String PushDialog_messageLabel;
     public static String PushDialog_check;
@@ -40,8 +28,8 @@ public class Messages
     public static String ScriptRunnerJob_ErrorCode;
     public static String ScriptRunnerJob_Done;
     public static String ScriptRunnerJob_ErrorDuringExecution;
-    public static String ScriptRunnerJob_Pull;
-    public static String ScriptRunnerJob_Push;
+    public static String ScriptRunnerJob_HeaderPull;
+    public static String ScriptRunnerJob_HeaderPush;
 
     public static String Application_Error;
 
