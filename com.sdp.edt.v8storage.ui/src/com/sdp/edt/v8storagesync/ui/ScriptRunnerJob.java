@@ -108,7 +108,7 @@ public class ScriptRunnerJob
                     String cwd = projectLocation.toOSString();
                     status = scriptRun(scriptPath, cwd, subMonitor);
                 }
-                if (status.getCode() == IStatus.ERROR)
+                if (status.getSeverity() == IStatus.ERROR)
                 {
                     return status;
                 }
