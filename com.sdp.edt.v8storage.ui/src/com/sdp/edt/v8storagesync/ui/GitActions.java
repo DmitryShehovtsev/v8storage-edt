@@ -2,7 +2,12 @@ package com.sdp.edt.v8storagesync.ui;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.text.MessageFormat;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -45,6 +50,46 @@ public class GitActions
     {
         RevCommit headCommit = getHeadCommit();
         return getParentCommitIdMergedBranch(headCommit).getName();
+    }
+
+    public void commitCheckout(String commitId, IProject project, IProgressMonitor monitor)
+    {
+        if (commitId == null || commitId.isEmpty())
+            throw new IllegalArgumentException(Messages.GitActions_CommitIDEmpty);
+
+        try (Git git = new Git(repository))
+        {
+            ObjectId resolved = repository.resolve(commitId);
+            if (resolved == null)
+                throw new IllegalArgumentException(
+                    MessageFormat.format(Messages.GitActions_CommitIDNotFound, commitId));
+
+            try (RevWalk revWalk = new RevWalk(repository))
+            {
+                RevCommit commit = revWalk.parseCommit(resolved);
+                if (commit == null)
+                    throw new IllegalArgumentException(
+                        MessageFormat.format(Messages.GitActions_CommitIDInvalid, commitId));
+            }
+
+            git.checkout().setName(commitId).call();
+
+            project.refreshLocal(IProject.DEPTH_INFINITE, monitor);
+
+        }
+        catch (GitAPIException | java.io.IOException e)
+        {
+            throw new RuntimeException(MessageFormat.format(Messages.GitActions_CheckoutFailed, e.getMessage()), e);
+        }
+        catch (org.eclipse.core.runtime.CoreException e)
+        {
+            throw new RuntimeException(MessageFormat.format(Messages.GitActions_RefreshFailed, e.getMessage()), e);
+        }
+    }
+
+    public String getFullBranch() throws IOException
+    {
+        return repository.getFullBranch();
     }
 
     private RevCommit getHeadCommit() throws InvocationTargetException

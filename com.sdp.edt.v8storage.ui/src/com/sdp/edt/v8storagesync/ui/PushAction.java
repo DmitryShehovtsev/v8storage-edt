@@ -68,7 +68,7 @@ public class PushAction
     @Override
     public String command()
     {
-        return String.format("v8storage push -f -h \"%s\" -m \"%s\"", hash, commitMessage); //$NON-NLS-1$
+        return String.format("v8storage push -h \"%s\" -m \"%s\"", hash, commitMessage); //$NON-NLS-1$
     }
 
     @Override
@@ -81,9 +81,7 @@ public class PushAction
         IV8ProjectManager v8projectManager = getv8projectManager();
         IV8Project v8Project = v8projectManager.getProject(project);
         if (v8Project instanceof IExtensionProject)
-        {
             return status;
-        }
 
         Optional<IApplication> application = commonUtils.defaultApplication(project);
         if (application.isEmpty())
@@ -93,9 +91,21 @@ public class PushAction
             return status;
         }
 
+        String previousRef = gitActions.getFullBranch();
+
+        String parentHash = gitActions.getParentHash();
+        gitActions.commitCheckout(parentHash, project, subMonitor);
         status = doUpdate(application, subMonitor);
+        subMonitor.setTaskName(project.getName());
         if (status.isOK())
-            status = doConfigDump(application, project, subMonitor);
+            status = doConfigDump(application, project, parentHash, subMonitor);
+
+        gitActions.commitCheckout(previousRef, project, subMonitor);
+        String headHash = gitActions.getHeadHash();
+        status = doUpdate(application, subMonitor);
+        subMonitor.setTaskName(project.getName());
+        if (status.isOK())
+            status = doConfigDump(application, project, headHash, subMonitor);
 
         return status;
     }
@@ -126,7 +136,8 @@ public class PushAction
         return status;
     }
 
-    private IStatus doConfigDump(Optional<IApplication> application, IProject project, IProgressMonitor subMonitor)
+    private IStatus doConfigDump(Optional<IApplication> application, IProject project, String dumpName,
+        IProgressMonitor subMonitor)
         throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
         IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
@@ -135,7 +146,7 @@ public class PushAction
         subMonitor.subTask(msgDump);
 
         IStatus status = null;
-        String dumpName = gitActions.getHeadHash();
+
         try
         {
             commonUtils.applicationConfigDump(application, project, dumpName, subMonitor);

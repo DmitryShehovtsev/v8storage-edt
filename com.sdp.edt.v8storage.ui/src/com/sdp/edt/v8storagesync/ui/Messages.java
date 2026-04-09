@@ -33,7 +33,11 @@ public class Messages
     public static String ScriptRunnerJob_HeaderPull;
     public static String ScriptRunnerJob_HeaderPush;
 
-    public static String Application_Error;
+    public static String GitActions_CommitIDEmpty;
+    public static String GitActions_CommitIDNotFound;
+    public static String GitActions_CommitIDInvalid;
+    public static String GitActions_CheckoutFailed;
+    public static String GitActions_RefreshFailed;
 
     static
     {

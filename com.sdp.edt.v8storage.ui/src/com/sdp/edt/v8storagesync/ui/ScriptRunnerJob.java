@@ -10,8 +10,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -39,7 +41,6 @@ public class ScriptRunnerJob
     public ScriptRunnerJob(AbstractActions action)
     {
         super(action.header());
-
         this.action = action;
         this.setUser(true);
         this.setProperty(IProgressConstants.KEEP_PROPERTY, Boolean.TRUE);
@@ -48,75 +49,82 @@ public class ScriptRunnerJob
     @Override
     protected IStatus run(IProgressMonitor monitor)
     {
-        monitor.beginTask(null, IProgressMonitor.UNKNOWN);
-
         IStatus status = null;
 
         try
         {
-            status = runWithSubMonitor(monitor);
+            ProgressMonitors.runAsTask("", IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> { //$NON-NLS-1$
+                runWithSubMonitor(subMonitor.split(1));
+            });
+            return Status.OK_STATUS;
         }
         catch (Exception e)
         {
             Throwable cause = e.getCause() == null ? e : e.getCause();
             if (cause instanceof ApplicationException)
             {
-               ApplicationException applicationError = (ApplicationException)cause;
-               ApplicationException eApp = (ApplicationException)cause;
-               status = applicationError.getStatus();
-               if (status.matches(IStatus.CANCEL))
-               {
-                   status = CommonUtils.statusError(Messages.ScriptRunnerJob_UserCancel, eApp);
-               }
-               else
-               {
-                   status = CommonUtils.statusError(Messages.Application_Error, eApp);
-               }
+                ApplicationException applicationError = (ApplicationException)cause;
+                status = applicationError.getStatus();
+                if (status.matches(IStatus.CANCEL))
+                {
+                    status = CommonUtils.statusError(Messages.ScriptRunnerJob_UserCancel, applicationError);
+                }
+                else
+                {
+                    status = CommonUtils.statusError(applicationError.getMessage(), applicationError);
+                }
             }
             else
             {
-                status = CommonUtils.statusError(Messages.Application_Error, e);
+                status = CommonUtils.statusError(e.getMessage(), e);
             }
+        }
+        finally
+        {
+            monitor.done();
         }
 
         return status;
     }
 
-    private IStatus runWithSubMonitor(IProgressMonitor monitor) throws Exception
+    private void runWithSubMonitor(IProgressMonitor monitor) throws Exception
     {
-        return ProgressMonitors.computeWithSubMonitor(null, IProgressMonitor.UNKNOWN, monitor, (subMonitor) -> {
+        IStatus status = null;
 
-            String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
-            if (!PreferencesChecks.FileExistsUI(scriptPath))
+        String scriptPath = Activator.getDefault().getPreferenceStore().getString(Activator.PREF_SCRIPT_PATH);
+        if (!PreferencesChecks.FileExistsUI(scriptPath))
+        {
+            String msg = PreferencesChecks.messageInvalidPath();
+            status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, null);
+            throw new CoreException(status);
+        }
+
+        IProject[] projects = action.projects();
+
+        if (projects.length == 0)
+        {
+            status = new Status(IStatus.CANCEL, Activator.PLUGIN_ID, Messages.Error_NoActiveProject, null);
+            throw new CoreException(status);
+        }
+
+        for (IProject project : projects)
+        {
+            monitor.setTaskName(project.getName());
+            status = action.beforeRunJob(project, monitor);
+            if (status.isOK())
             {
-                String msg = PreferencesChecks.messageInvalidPath();
-                return CommonUtils.statusError(msg, null);
+                IPath projectLocation = project.getLocation();
+                String cwd = projectLocation.toOSString();
+                status = scriptRun(scriptPath, cwd, monitor);
+                project.refreshLocal(IProject.DEPTH_INFINITE, monitor);
             }
-
-            IProject[] projects = action.projects();
-
-            IStatus status = null;
-            if (projects.length == 0)
-                status = new Status(IStatus.CANCEL, Activator.PLUGIN_ID, Messages.Error_NoActiveProject, null);
-
-            for (IProject project : projects)
+            if (status.matches(IStatus.ERROR))
             {
-                status = action.beforeRunJob(project, subMonitor);
-                if (status.isOK())
-                {
-                    IPath projectLocation = project.getLocation();
-                    String cwd = projectLocation.toOSString();
-                    status = scriptRun(scriptPath, cwd, subMonitor);
-                }
-                if (status.getSeverity() == IStatus.ERROR)
-                {
-                    return status;
-                }
+                status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, status.getMessage(), null);
+                throw new CoreException(status);
             }
+        }
 
-            return status;
-
-        });
     }
 
     private IStatus scriptRun(String scriptPath, String cwd, IProgressMonitor monitor)
@@ -131,36 +139,62 @@ public class ScriptRunnerJob
         pb.directory(new File(cwd));
 
         Process process = null;
+
         try
         {
             process = pb.start();
 
-            Thread outputThread = newOutputThread(process, monitor);
-            outputThread.start();
+            MessageConsole console = findOrCreateConsole();
 
-            while (process.isAlive())
+            String osName = System.getProperty("os.name").toLowerCase(); //$NON-NLS-1$
+            Charset charset = osName.contains("win") ? Charset.forName("CP866") : StandardCharsets.UTF_8; //$NON-NLS-1$ //$NON-NLS-2$
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset));
+                MessageConsoleStream outputStream = console.newMessageStream())
             {
-                if (monitor.isCanceled())
+                while (process.isAlive())
                 {
-                    process.destroy();
-                    return Status.CANCEL_STATUS;
+                    if (monitor.isCanceled())
+                    {
+                        process.destroy();
+                        return Status.CANCEL_STATUS;
+                    }
+
+                    while (reader.ready())
+                    {
+                        String line = reader.readLine();
+                        if (line != null)
+                        {
+                            outputStream.println(line);
+                            monitor.subTask(line);
+                        }
+                    }
+
+                    process.waitFor(100, TimeUnit.MILLISECONDS);
                 }
-                Thread.sleep(100);
-            }
 
-            outputThread.join();
+                while (reader.ready())
+                {
+                    String line = reader.readLine();
+                    if (line != null)
+                    {
+                        outputStream.println(line);
+                        monitor.subTask(line);
+                    }
+                }
 
-            int exitCode = process.exitValue();
-            if (exitCode != 0)
-            {
-                String errorMsg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorCode, exitCode);
-                monitor.subTask(errorMsg);
-                return CommonUtils.statusError(errorMsg, null);
-            }
-            else
-            {
-                monitor.subTask(Messages.ScriptRunnerJob_Done);
-                return Status.OK_STATUS;
+                int exitCode = process.exitValue();
+                if (exitCode != 0)
+                {
+                    String errorMsg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorCode, exitCode);
+                    monitor.subTask(errorMsg);
+                    return CommonUtils.statusError(errorMsg, null);
+                }
+                else
+                {
+                    monitor.subTask(Messages.ScriptRunnerJob_Done);
+                    return Status.OK_STATUS;
+                }
             }
         }
         catch (IOException | InterruptedException e)
@@ -177,39 +211,6 @@ public class ScriptRunnerJob
                 process.destroy();
             }
         }
-    }
-
-    private Thread newOutputThread(Process process, IProgressMonitor monitor)
-    {
-        MessageConsole console = findOrCreateConsole();
-        MessageConsoleStream outputStream = console.newMessageStream();
-
-        String osName = System.getProperty("os.name").toLowerCase(); //$NON-NLS-1$
-        Charset charset = osName.contains("win") ? Charset.forName("CP866") : StandardCharsets.UTF_8; //$NON-NLS-1$ //$NON-NLS-2$
-
-        Thread outputThread = new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset)))
-            {
-                String line;
-                while ((line = reader.readLine()) != null)
-                {
-                    if (monitor.isCanceled())
-                    {
-                        break;
-                    }
-                    outputStream.println(line);
-                    monitor.subTask(line);
-                }
-            }
-            catch (IOException e)
-            {
-                String msg = MessageFormat.format(Messages.ScriptRunnerJob_ErrorReading, e.getMessage());
-                CommonUtils.statusError(msg, e);
-
-            }
-        });
-
-        return outputThread;
     }
 
     private MessageConsole findOrCreateConsole()
