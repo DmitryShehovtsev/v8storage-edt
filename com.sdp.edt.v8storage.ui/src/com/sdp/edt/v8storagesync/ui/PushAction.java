@@ -91,21 +91,9 @@ public class PushAction
             return status;
         }
 
-        String previousRef = gitActions.getFullBranch();
-
-        String parentHash = gitActions.getParentHash();
-        gitActions.commitCheckout(parentHash, project, subMonitor);
         status = doUpdate(application, subMonitor);
-        subMonitor.setTaskName(project.getName());
         if (status.isOK())
-            status = doConfigDump(application, project, parentHash, subMonitor);
-
-        gitActions.commitCheckout(previousRef, project, subMonitor);
-        String headHash = gitActions.getHeadHash();
-        status = doUpdate(application, subMonitor);
-        subMonitor.setTaskName(project.getName());
-        if (status.isOK())
-            status = doConfigDump(application, project, headHash, subMonitor);
+            status = doConfigDump(application, project, subMonitor);
 
         return status;
     }
@@ -136,8 +124,7 @@ public class PushAction
         return status;
     }
 
-    private IStatus doConfigDump(Optional<IApplication> application, IProject project, String dumpName,
-        IProgressMonitor subMonitor)
+    private IStatus doConfigDump(Optional<IApplication> application, IProject project, IProgressMonitor subMonitor)
         throws InvocationTargetException, RevisionSyntaxException, AmbiguousObjectException,
         IncorrectObjectTypeException, IOException, RuntimeExecutionException
     {
@@ -146,7 +133,7 @@ public class PushAction
         subMonitor.subTask(msgDump);
 
         IStatus status = null;
-
+        String dumpName = gitActions.getHeadHash();
         try
         {
             commonUtils.applicationConfigDump(application, project, dumpName, subMonitor);
